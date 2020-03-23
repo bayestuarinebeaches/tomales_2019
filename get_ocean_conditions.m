@@ -1,6 +1,8 @@
 % Lukas WinklerPrins, lukas_wp@berkeley.edu
 % Last Modified 27 January 2020
 
+% DE-COMMISSIONED AS OF MARCH 2020... now see get_conditions.m 
+
 %%%%% ATMOSPHERIC PRESSURE
 fid = fopen('external_data/old/bml_barometric_pressure_2019_hourly.txt','rt');
 P = textscan(fid,'%d,%d-%d-%d %d:%d:%d,%d,%f');

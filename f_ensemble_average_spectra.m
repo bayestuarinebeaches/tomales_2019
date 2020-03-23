@@ -19,12 +19,12 @@ function [W,E] = f_ensemble_average_spectra(T,U,window_length,varargin)
 
 measurements_per_window = (1/T)*window_length;
 running_E = zeros(1,measurements_per_window*T);
-n_intervals = floor(length(U)/measurements_per_window);
+n_ensembles = floor(length(U)/measurements_per_window);
 
 if nargin == 5
     % Then the last argument is a "number of intervals"
-    if varargin{2} > n_intervals
-        n_intervals = varargin{2};
+    if varargin{2} > n_ensembles
+        n_ensembles = varargin{2};
     else
         error('The indicated number of intervals will not span the input data length.\n');
     end
@@ -32,9 +32,8 @@ else
     
 end
 
-for hh = 0:n_intervals-1
+for hh = 0:n_ensembles-1
     [W,tE] = ezfft(T,U((hh*measurements_per_window+1):(hh+1)*measurements_per_window));
-    % THIS OBVIOUSLY DOES NOT TAKE FULL ADVANTAGE OF N_INTERVALS...
     running_E = running_E + tE;
 end
 
@@ -43,6 +42,6 @@ if nargin >= 4
     running_E = movmean(running_E,varargin{1});
 end
 
-E = running_E./n_intervals;
+E = running_E./n_ensembles;
 
 end
