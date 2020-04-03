@@ -134,7 +134,7 @@ for nn = 0:n_insts-1
     ea_times(nn+1) = trimmed_times(nn*ea_spacing*60*60*fs+1+floor(measurements_per_window/2)); % These times are at center of interval.
     
     if attenuate_pressure
-        S = Sp_to_Ss(ensemble,mab(sensor_choice),W,S);
+        S = Sd_to_Ss(ensemble,mab(sensor_choice),W,S);
     end
     
     matrixS(nn+1,:) = movmean(S,5);
