@@ -3,11 +3,11 @@
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
-attenuate_pressure = 1;
+attenuate_pressure = 0;
 visualize_conditions = 1;
 use_residual_spectra = 0;
 use_windowing = 1;
-detrend_ensemble = 1; % use esp. if instance length is shorter than tidal period
+detrend_ensemble = 0; % use esp. if instance length is shorter than tidal period
 do_energy_correlations = 1;
 visualize_big_spectra = 1;
 variance_preserving = 0;
@@ -119,7 +119,7 @@ for nn = 0:n_insts-1
     
     if detrend_ensemble
         ensemble = detrend(trimmed_depth_signal(si:ei),1);
-        % Detrend type 1 removes a linear trend. 
+        % Detrend tipe 1 removes a li
     else
         ensemble = trimmed_depth_signal(si:ei);
     end
