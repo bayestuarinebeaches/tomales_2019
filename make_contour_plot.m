@@ -145,6 +145,7 @@ for nn = 0:n_insts-1
     if ei > length(eta), error('Encountered an issue with indexing the signal.'), end
     
     ensemble = eta(si:ei);
+    ensemble = detrend(ensemble,3);
     
     if use_windowing
         % Uses Tukey Window, per recommendation here: https://arena-attachments.s3.amazonaws.com/5331399/0509f4edab72d8fb7e4628a7f6fcea3a.pdf?1571926476
