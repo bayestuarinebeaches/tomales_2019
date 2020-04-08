@@ -1,16 +1,16 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 3 April 2020
+% Last Edited 8 April 2020
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
-attenuate_pressure = 1;
+adjust_pressure = 0;
+make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0;
 use_windowing = 1;
-detrend_ensemble = 1; % use esp. if instance length is shorter than tidal period
-do_energy_correlations = 1;
+do_energy_correlations = 0;
 visualize_big_spectra = 1;
-variance_preserving = 0;
+variance_preserving = 1;
 
 %% Data Controls
 
@@ -61,13 +61,30 @@ cmab = [460, 14, 20];
 
 % tomales_rbrs.mat has labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
 
-sensor_choice = 3;
+% DAYS OF INTEREST
+% Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
+% start_time = datenum(2019,9,28,12,0,0);
+% end_time = datenum(2019,9,29,12,0,0);
+
+% % Oct 19-Oct 19 - Windy, swell arrives, lots of IGW
+% start_time = datenum(2019,10,18,0,0,0);
+% end_time = datenum(2019,10,19,12,0,0);
+% 
+% % Nov 15-16 - Windy, bigger swell arrives, Lukas' Birthday
+% start_time = datenum(2019,11,15,6,0,0);
+% end_time = datenum(2019,11,16,6,0,0);
+% 
+% % Nov 20-21 - bigger waves, from local wind? 
+% start_time = datenum(2019,11,20,0,0,0);
+% end_time = datenum(2019,11,20,12,0,0);
+
+sensor_choice = 2;
 
 %% Setup
 
 if instance_length > window_length, error('Ensemble Instance length must be smaller than the averaging window length.'), end
 if window_length < ea_spacing, error('Right now, code requires windows be longer than ensemble spacing.'), end
-if attenuate_pressure
+if adjust_pressure
     extra = 'with attenuation';
 else
     extra = '';
@@ -84,17 +101,21 @@ end_index = find(times == end_time);
 trimmed_depth_signal = depth_signal(start_index:end_index); 
 trimmed_times = rbr_times{sensor_choice}(start_index:end_index); % Comes as datetimes
 
+% Remove the tidal signal using t_tide (https://www.eoas.ubc.ca/~rich/)
+[tidestruc,d_out] = t_tide(trimmed_depth_signal,T/3600);
+eta = trimmed_depth_signal - d_out;
+
 if isempty(start_index), error('Start time not found.'), end
 
 mab = cmab./100;
-    
+tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal);
 
 %% Machinery
 
-[W,big_average_S] = f_ensemble_average_spectra(T,trimmed_depth_signal,instance_length*60*60,5);
+[W,big_average_S] = f_ensemble_average_spectra(T,eta,instance_length*60*60,5);
 
-if attenuate_pressure
-    big_average_S = Sp_to_Ss(trimmed_depth_signal,mab(sensor_choice),W,big_average_S);
+if adjust_pressure
+    big_average_S = Sd_to_Ss(eta,mab(sensor_choice),W,big_average_S);
 end
 
 measurements_per_window = window_length*60*60*fs;
@@ -102,27 +123,28 @@ measurements_per_window = window_length*60*60*fs;
 % Decision: EA spacing dominates, we will clip timeseries at end if the
 % combination of parameters doesn't "fit" perfectly into the timeseries. 
 
-n_insts = floor((length(trimmed_depth_signal) - measurements_per_window)/(ea_spacing*60*60*fs));
+n_insts = floor((length(eta) - measurements_per_window)/(ea_spacing*60*60*fs));
 
 matrixS = zeros(n_insts,length(big_average_S));
 % Each row in matrix_E is a power spectra for window. 
 % The earlier time is at the top, the latter time at the bottom. 
+high_tide_running_S = zeros(1,length(big_average_S));
+n_high_tide_S = 0;
+med_tide_running_S = zeros(1,length(big_average_S));
+n_med_tide_S = 0;
+low_tide_running_S = zeros(1,length(big_average_S));
+n_low_tide_S = 0;
 
 ea_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
-runningS = zeros(size(big_average_S));
+running_S = zeros(size(big_average_S));
 
 for nn = 0:n_insts-1
     si = nn*ea_spacing*60*60*fs + 1;
     ei = nn*ea_spacing*60*60*fs + measurements_per_window;
     
-    if ei > length(trimmed_depth_signal), error('Encountered an issue with indexing the signal.'), end
+    if ei > length(eta), error('Encountered an issue with indexing the signal.'), end
     
-    if detrend_ensemble
-        ensemble = detrend(trimmed_depth_signal(si:ei),1);
-        % Detrend type 1 removes a linear trend. 
-    else
-        ensemble = trimmed_depth_signal(si:ei);
-    end
+    ensemble = eta(si:ei);
     
     if use_windowing
         % Uses Tukey Window, per recommendation here: https://arena-attachments.s3.amazonaws.com/5331399/0509f4edab72d8fb7e4628a7f6fcea3a.pdf?1571926476
@@ -133,16 +155,31 @@ for nn = 0:n_insts-1
      
     ea_times(nn+1) = trimmed_times(nn*ea_spacing*60*60*fs+1+floor(measurements_per_window/2)); % These times are at center of interval.
     
-    if attenuate_pressure
+    if adjust_pressure
         S = Sd_to_Ss(ensemble,mab(sensor_choice),W,S);
     end
     
+    if mean(trimmed_depth_signal(si:ei)) > min(trimmed_depth_signal)+(2/3)*tide_range
+        high_tide_running_S = high_tide_running_S + S;
+        n_high_tide_S = n_high_tide_S + 1;
+    elseif mean(trimmed_depth_signal(si:ei)) < min(trimmed_depth_signal)+(1/3)*tide_range
+        low_tide_running_S = low_tide_running_S + S;
+        n_low_tide_S = n_low_tide_S + 1;
+    else
+        med_tide_running_S = med_tide_running_S + S;
+        n_med_tide_S = n_med_tide_S + 1;
+    end
+        
+    
     matrixS(nn+1,:) = movmean(S,5);
-    runningS = runningS + S;
+    running_S = running_S + S;
     freq = W./(2*pi);
 end
 
-runningS = runningS./n_insts;
+high_tide_running_S = high_tide_running_S./n_high_tide_S;
+med_tide_running_S = med_tide_running_S./n_med_tide_S;
+low_tide_running_S = low_tide_running_S./n_low_tide_S;
+running_S = running_S./n_insts;
 
 
 %% Adjustment 
@@ -151,10 +188,10 @@ logfreq = log10(freq);
 logS = log10(matrixS);
 logSt = zeros(size(logS));
 logBigS = log10(big_average_S);
-logRunningS = log10(runningS);
+logRunningS = log10(running_S);
 if use_residual_spectra
     for nn = 1:n_insts
-        logSt(nn,:) = logS(nn,:) - logBigS; % Could subtract logRunning_S instead
+        logSt(nn,:) = logS(nn,:) - logRunningS; % Could subtract logBig_S instead, but it doesn't make as much sense with windowing and such. 
     end
 else
     logSt = logS;
@@ -223,7 +260,7 @@ if do_energy_correlations
     plot(datenum(ea_times),swell_energy./max(swell_energy));
     plot(datenum(ea_times),igw_energy./max(igw_energy));
 %     plot(datenum(ea_times),seiche_energy./max(seiche_energy));
-    plot(datenum(trimmed_times),trimmed_depth_signal./max(trimmed_depth_signal),'g:');
+    plot(datenum(trimmed_times),eta./max(eta),'g:');
     xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
     title(['Normalized Energy from Wind, Swell, IGW, Seiche Bands at ' labels{sensor_choice}]);
     legend('< 8s','8s to 20s','20s to 250s');%,'5min to 30min');
@@ -242,83 +279,102 @@ end
 
 logSt = logSt'; % Transpose! 
 
-figure
-sgtitle([labels{sensor_choice} ' Spectra, ' num2str(ea_spacing) '-hr Spacing, ' num2str(window_length) '-hr Window, ' num2str(instance_length) '-hour Ensembles ' extra]);
+if make_spectra_plot
+    figure
+    sgtitle([labels{sensor_choice} ' Spectra, ' num2str(ea_spacing) '-hr Spacing, ' num2str(window_length) '-hr Window, ' num2str(instance_length) '-hour Ensembles ' extra]);
 
-if visualize_conditions
-    ff(1) = subplot(4,2,[1,2,3,4]);
+    if visualize_conditions
+        ff(1) = subplot(4,2,[1,2,3,4]);
+    end
+
+    % It is good to start at 2 to avoid inf. 
+    contourf(datenum(ea_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
+    c = colorbar('east');
+    if use_residual_spectra
+        c.Label.String = 'Residual Power Density (m^2/Hz)';
+    else
+        c.Label.String = 'Power Density (m^2/Hz)';
+    end
+
+    % datetick('x',21);
+    xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
+    % new_ticks = linspace(datenum(ea_times(1)),datenum(ea_times(end)),8);
+    % xticks(new_ticks);
+    % new_tick_labels = {};
+    % for mm = 1:length(new_ticks)
+    %     new_tick_labels{mm} = datestr(new_ticks(mm));
+    % end
+    % xticklabels(new_tick_labels);
+    % xtickangle(25);
+    ylabel('Log_{10} Frequency (Hz)'); 
+    xlabel('Time (Center of Interval)');
+    zlabel('Log Power Density (m^2/Hz)');
+
+    if visualize_conditions
+        ff(2) = subplot(4,2,[5,6]);
+        yyaxis right
+
+        scatter(datenum(wind.time),wind.spd,'.');
+        ylim([0 20]);
+        ylabel('Wind Speed (m/s)');
+        yyaxis left
+        hold on
+        scatter(datenum(wind.time),wind.dir,'o');
+        scatter(datenum(swell.time),swell.dir,'g+');
+        ylabel('Direction (°)');
+        ylim([0 360]); % weird outliers sometimes...
+    %     xlim([datetime(start_time,'ConvertFrom','datenum') datetime(end_time,'ConvertFrom','datenum')]);
+        xlim([start_time end_time]);
+
+        ff(3) = subplot(4,2,[7,8]);
+        yyaxis left
+        plot(datenum(swell.time),swell.hgt,'+');
+        ylabel('H_s (m)');
+        hold on
+    %     plot(datenum(rbr_times{sensor_choice}),depth_signal,'g-');
+        plot(datenum(sni.time),sni.value.*5,'g-');
+        plot(datenum(trimmed_times),trimmed_depth_signal,'k-');
+        yyaxis right
+        scatter(datenum(swell.time),swell.per,'.');
+        ylabel('Period (s)');
+        ylim([0 20]);
+    %     xlim([datetime(start_time,'ConvertFrom','datenum') datetime(end_time,'ConvertFrom','datenum')]);
+        xlim([start_time end_time]);
+
+    end
+
+    linkaxes(ff,'x');
 end
-
-% It is good to start at 2 to avoid inf. 
-contourf(datenum(ea_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
-c = colorbar('east');
-if use_residual_spectra
-    c.Label.String = 'Residual Power Density (m^2/Hz)';
-else
-    c.Label.String = 'Power Density (m^2/Hz)';
-end
-
-% datetick('x',21);
-xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
-% new_ticks = linspace(datenum(ea_times(1)),datenum(ea_times(end)),8);
-% xticks(new_ticks);
-% new_tick_labels = {};
-% for mm = 1:length(new_ticks)
-%     new_tick_labels{mm} = datestr(new_ticks(mm));
-% end
-% xticklabels(new_tick_labels);
-% xtickangle(25);
-ylabel('Log_{10} Frequency (Hz)'); 
-xlabel('Time (Center of Interval)');
-zlabel('Log Power Density (m^2/Hz)');
-
-if visualize_conditions
-    ff(2) = subplot(4,2,[5,6]);
-    yyaxis right
-
-    scatter(datenum(wind.time),wind.spd,'.');
-    ylim([0 20]);
-    ylabel('Wind Speed (m/s)');
-    yyaxis left
-    hold on
-    scatter(datenum(wind.time),wind.dir,'o');
-    scatter(datenum(swell.time),swell.dir,'g+');
-    ylabel('Direction (°)');
-    ylim([0 360]); % weird outliers sometimes...
-%     xlim([datetime(start_time,'ConvertFrom','datenum') datetime(end_time,'ConvertFrom','datenum')]);
-    xlim([start_time end_time]);
-
-    ff(3) = subplot(4,2,[7,8]);
-    yyaxis left
-    plot(datenum(swell.time),swell.hgt,'+');
-    ylabel('H_s (m)');
-    hold on
-%     plot(datenum(rbr_times{sensor_choice}),depth_signal,'g-');
-    plot(datenum(sni.time),sni.value.*5,'g-');
-    plot(datenum(trimmed_times),trimmed_depth_signal,'k-');
-    yyaxis right
-    scatter(datenum(swell.time),swell.per,'.');
-    ylabel('Period (s)');
-    ylim([0 20]);
-%     xlim([datetime(start_time,'ConvertFrom','datenum') datetime(end_time,'ConvertFrom','datenum')]);
-    xlim([start_time end_time]);
-
-end
-
-linkaxes(ff,'x');
 
 if visualize_big_spectra
     figure
     if variance_preserving
-        semilogx(freq,big_average_S.*freq,'b');
+        semilogx(freq,running_S.*freq,'k');
+        hold on
+        semilogx(freq,high_tide_running_S.*freq,'b');
+        semilogx(freq,med_tide_running_S.*freq,'r');
+        semilogx(freq,low_tide_running_S.*freq,'g');
         ylabel('Variance Per Hz');
+        legend('Total Running','High Tide','Med Tide','Low Tide');
     else
-        loglog(freq,big_average_S,'b');
+%         loglog(freq,big_average_S,'b');
+%         hold on
+        loglog(freq,running_S,'b');
+        
         ylabel('Depth Power Density (m^2/Hz)');
     end
     xlabel('Frequency (Hz)');
+    
+    [~,si] = min(abs(freq - 0.001));
+    [~,ei] = min(abs(freq - 0.1));
+%     [~,si] = min(abs(freq - 0.4)); % Use this to test the high-freq end
 
-    fitcoeff = polyfit(logfreq(2:end),logBigS(2:end),1);
+%     fitcoeff = polyfit(logfreq(2:end),logBigS(2:end),1);
+    fitcoeff = polyfit(logfreq(si:end),logBigS(si:end),1);
+
+    % OK actually we're just gonna fit to the juicy middle part...
+%     fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
+    
     fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 
     title(['Arithmetic Mean of ' num2str(instance_length) '-hour Instance Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
