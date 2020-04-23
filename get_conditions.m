@@ -1,5 +1,5 @@
 % Lukas WinklerPrins, lukas_wp@berkeley.edu
-% Last Modified 6 March 2020
+% Last Modified 23 April 2020
 
 path_prefix = 'external_data/';
 
@@ -40,7 +40,7 @@ temperature.data = readmatrix([path_prefix temperature.file],'Range',['D1:D' ser
 temperature.unit = 'deg C';
 temperature.interval = 'hourly';
 
-%% NOAA BUOY STUFF
+%% NOAA BUOY MET STUFF
 % creates "WIND" and "SWELL" structs
 % Swell Direction, Period, Height; Wind Direction, Wind Speed
 buoy_file = '46013_2019_stdmet.txt';
@@ -78,6 +78,31 @@ end
 
 swell.time = datetime(temp_time);
 wind.time = datetime(temp_time);
+
+%% NOAA BUOY SPECTRAL
+% creates "WIND" and "SWELL" structs
+% Swell Direction, Period, Height; Wind Direction, Wind Speed
+buoy_file = '46013_2019_spectral.txt';
+fid = fopen([path_prefix buoy_file],'rt');
+P = textscan(fid, '%d %d %d %d %d %f %f %f %f %f %d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f','HeaderLines',1);
+
+buoy_spectra.file = buoy_file;
+buoy_spectra.interval = 'hourly at 40min';
+buoy_spectra.spectra = [];
+temp_time = [];
+buoy_spectra.freq = [.0200  .0325  .0375  .0425  .0475  .0525  .0575  .0625  .0675  .0725  .0775  .0825  .0875  .0925  .1000  .1100  .1200  .1300  .1400  .1500  .1600  .1700  .1800  .1900  .2000  .2100  .2200  .2300  .2400  .2500  .2600  .2700  .2800  .2900  .3000  .3100  .3200  .3300  .3400  .3500  .3650  .3850  .4050  .4250  .4450  .4650  .4850];
+
+for ii = 1:length(P{1})
+    progress_bar(ii,1,length(P{1}));
+    temp = [];
+    for jj = 6:52
+        temp(jj-5) = P{jj}(ii);
+    end
+    buoy_spectra.spectra = [buoy_spectra.spectra; temp];
+    temp_time = [temp_time; P{1}(ii),P{2}(ii),P{3}(ii),P{4}(ii),P{5}(ii),0];
+end
+
+buoy_spectra.time = datetime(temp_time);
 
 %% TIDES
 % Not really crucial, but I guess we can have it... 
