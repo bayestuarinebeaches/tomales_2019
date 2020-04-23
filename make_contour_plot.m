@@ -1,5 +1,5 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 8 April 2020
+% Last Edited 17 April 2020
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
@@ -7,7 +7,7 @@ adjust_pressure = 0;
 make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0;
-use_windowing = 1;
+use_windowing = 0;
 do_energy_correlations = 0;
 visualize_big_spectra = 1;
 variance_preserving = 1;
@@ -51,8 +51,8 @@ cmab = [460, 20, 14, 47, 25, 116, 30];
 % cmab = [460, 20, 14, 116];
 
 % For FOURTH Sensor Set
-start_time = datenum(2019,9,28,0,0,0);
-end_time = datenum(2019,11,24,0,0,0);
+% start_time = datenum(2019,9,28,0,0,0);
+% end_time = datenum(2019,11,24,0,0,0);
 % load RBR_data/20191124/tomales_rbrs.mat
 load rbr_data_deployment_4.mat
 % LL, SB, PPN
@@ -66,21 +66,26 @@ cmab = [460, 14, 20];
 % start_time = datenum(2019,9,28,12,0,0);
 % end_time = datenum(2019,9,29,12,0,0);
 
-% % Oct 19-Oct 19 - Windy, swell arrives, lots of IGW
-% start_time = datenum(2019,10,18,0,0,0);
+% % Oct 19-Oct 19 - Windy, swell arrives, some
+% start_time = datenum(2019,10,17,0,0,0);
 % end_time = datenum(2019,10,19,12,0,0);
 % 
 % % Nov 15-16 - Windy, bigger swell arrives, Lukas' Birthday
 % start_time = datenum(2019,11,15,6,0,0);
-% end_time = datenum(2019,11,16,6,0,0);
+% end_time = datenum(2019,11,16,18,0,0);
 % 
 % % Nov 20-21 - bigger waves, from local wind? 
-% start_time = datenum(2019,11,20,0,0,0);
+% start_time = datenum(2019,11,19,0,0,0);
 % end_time = datenum(2019,11,20,12,0,0);
 
-sensor_choice = 2;
+start_time = datenum(2019,10,21,0,0,0);
+end_time = datenum(2019,10,22,0,0,0);
+
+sensor_choice = 3;
 
 %% Setup
+
+fprintf(['Running stuff for ' labels{sensor_choice} 'with %d, %d, %d.\n'],ea_spacing,window_length,instance_length);
 
 if instance_length > window_length, error('Ensemble Instance length must be smaller than the averaging window length.'), end
 if window_length < ea_spacing, error('Right now, code requires windows be longer than ensemble spacing.'), end
@@ -102,7 +107,7 @@ trimmed_depth_signal = depth_signal(start_index:end_index);
 trimmed_times = rbr_times{sensor_choice}(start_index:end_index); % Comes as datetimes
 
 % Remove the tidal signal using t_tide (https://www.eoas.ubc.ca/~rich/)
-[tidestruc,d_out] = t_tide(trimmed_depth_signal,T/3600);
+[tidestruc,d_out] = t_tide(trimmed_depth_signal,T/3600,'output','none');
 eta = trimmed_depth_signal - d_out;
 
 if isempty(start_index), error('Start time not found.'), end
@@ -126,6 +131,7 @@ measurements_per_window = window_length*60*60*fs;
 n_insts = floor((length(eta) - measurements_per_window)/(ea_spacing*60*60*fs));
 
 matrixS = zeros(n_insts,length(big_average_S));
+matrixSfreq = zeros(size(matrixS));
 % Each row in matrix_E is a power spectra for window. 
 % The earlier time is at the top, the latter time at the bottom. 
 high_tide_running_S = zeros(1,length(big_average_S));
@@ -175,6 +181,8 @@ for nn = 0:n_insts-1
     matrixS(nn+1,:) = movmean(S,5);
     running_S = running_S + S;
     freq = W./(2*pi);
+    
+    matrixSfreq(nn+1,:) = matrixS(nn+1,:).*freq;
 end
 
 high_tide_running_S = high_tide_running_S./n_high_tide_S;
@@ -187,6 +195,7 @@ running_S = running_S./n_insts;
     
 logfreq = log10(freq);
 logS = log10(matrixS);
+% logSfreq = log10(matrixSfreq);
 logSt = zeros(size(logS));
 logBigS = log10(big_average_S);
 logRunningS = log10(running_S);
@@ -220,7 +229,27 @@ end
 tmp_diffs = movmean(movmean(diffs,3),8);
 sni.value = (tmp_diffs-min(tmp_diffs))./(max(tmp_diffs)-min(tmp_diffs));
 
+%% Moments
 
+% Wind (1 to 0.125 Hz)
+[~,si] = min(abs(freq - 0.125));
+m0_wind = sum(running_S(si:end).*freq(si:end));
+
+% Swell (0.125 to 0.05 Hz)
+[~,si] = min(abs(freq - 0.05));
+[~,ei] = min(abs(freq - 0.125));
+m0_swell = sum(running_S(si:ei).*freq(si:ei));
+
+% IGW (0.05 to 0.004 Hz)
+[~,si] = min(abs(freq - 0.004)); 
+[~,ei] = min(abs(freq - 0.05));
+m0_igw = sum(running_S(si:ei).*freq(si:ei));
+
+Hs_wind = 4*sqrt(m0_wind);
+Hs_swell = 4*sqrt(m0_swell);
+Hs_igw = 4*sqrt(m0_igw);
+
+fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
 
 %% Correlations
 
@@ -279,6 +308,8 @@ end
 %% Plotting
 
 logSt = logSt'; % Transpose! 
+matrixSfreq = matrixSfreq';
+% logSfreq = logSfreq';
 
 if make_spectra_plot
     figure
@@ -289,7 +320,11 @@ if make_spectra_plot
     end
 
     % It is good to start at 2 to avoid inf. 
-    contourf(datenum(ea_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
+    if variance_preserving
+        contourf(datenum(ea_times(:)),logfreq(2:end),matrixSfreq(2:end,:),15,'LineColor','none');
+    else
+        contourf(datenum(ea_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
+    end
     c = colorbar('east');
     if use_residual_spectra
         c.Label.String = 'Residual Power Density (m^2/Hz)';
@@ -366,24 +401,22 @@ if visualize_big_spectra
     end
     xlabel('Frequency (Hz)');
     
+    % OK actually we're just gonna fit to the juicy middle part...
     [~,si] = min(abs(freq - 0.001));
     [~,ei] = min(abs(freq - 0.1));
-%     [~,si] = min(abs(freq - 0.4)); % Use this to test the high-freq end
+    
+    % Or maybe just 0.05 Hz to the end, per Hughes et al 2014
+    [~,si] = min(abs(freq - 0.05));
+    
+    % Just get the high-freq end?
+    [~,si] = min(abs(freq - 0.4)); % Use this to test the high-freq end
 
-%     fitcoeff = polyfit(logfreq(2:end),logBigS(2:end),1);
-    fitcoeff = polyfit(logfreq(si:end),logBigS(si:end),1);
-
-    % OK actually we're just gonna fit to the juicy middle part...
 %     fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
+    fitcoeff = polyfit(logfreq(si:end),logBigS(si:end),1);
     
     fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 
     title(['Arithmetic Mean of ' num2str(instance_length) '-hour Instance Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
 end
 
-
-%% To-Do
-
-% - Automate cmab stuff
-% - Quiver plot for winds & swell ? 
 
