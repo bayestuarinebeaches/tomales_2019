@@ -8,8 +8,8 @@ make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0;
 use_windowing = 0;
-do_energy_correlations = 1;
-visualize_big_spectra = 0;
+do_energy_correlations = 0;
+visualize_big_spectra = 1;
 variance_preserving = 1;
 
 %% Data Controls
@@ -321,8 +321,14 @@ if make_spectra_plot
 
     % It is good to start at 2 to avoid inf. 
     if variance_preserving
+        % Impose high & low values to fix scale bar. 
+        matrixSfreq(2,end) = 6*10^-4;
+        matrixSfreq(2,end-1) = 0;
         contourf(datenum(ea_times(:)),logfreq(2:end),matrixSfreq(2:end,:),15,'LineColor','none');
     else
+        % Impose high & low values to fix scale bar. 
+        logSt(2,end) = -1;
+        logSt(2,end-1) = -9;
         contourf(datenum(ea_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
     end
     c = colorbar('east');
@@ -394,11 +400,12 @@ if visualize_big_spectra
         semilogx(freq,low_tide_running_S.*freq,'g');
         ylabel('Variance Per Hz');
         legend('Total Running','High Tide','Med Tide','Low Tide');
+        axis([min(freq),max(freq),0,3*10^-5]);
     else
 %         loglog(freq,big_average_S,'b');
 %         hold on
         loglog(freq,running_S,'b');
-        
+        axis([min(freq),max(freq),10^-8,10^-2]);
         ylabel('Depth Power Density (m^2/Hz)');
     end
     xlabel('Frequency (Hz)');
