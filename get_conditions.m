@@ -127,7 +127,7 @@ end
 tides.unit = 'meters';
 tides.interval = '6 minutes';
 
-save conditions.mat b_pressure salinity turbidity temperature swell wind tides 
+% save conditions.mat b_pressure salinity turbidity temperature swell wind tides 
 
 %% TO-DO
 

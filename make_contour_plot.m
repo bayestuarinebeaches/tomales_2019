@@ -1,5 +1,5 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 17 April 2020
+% Last Edited 26 April 2020
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
@@ -8,8 +8,8 @@ make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0;
 use_windowing = 0;
-do_energy_correlations = 0;
-visualize_big_spectra = 1;
+do_energy_correlations = 1;
+visualize_big_spectra = 0;
 variance_preserving = 1;
 
 %% Data Controls
@@ -51,8 +51,8 @@ cmab = [460, 20, 14, 47, 25, 116, 30];
 % cmab = [460, 20, 14, 116];
 
 % For FOURTH Sensor Set
-% start_time = datenum(2019,9,28,0,0,0);
-% end_time = datenum(2019,11,24,0,0,0);
+start_time = datenum(2019,9,28,0,0,0);
+end_time = datenum(2019,11,24,0,0,0);
 % load RBR_data/20191124/tomales_rbrs.mat
 load rbr_data_deployment_4.mat
 % LL, SB, PPN
@@ -78,10 +78,10 @@ cmab = [460, 14, 20];
 % start_time = datenum(2019,11,19,0,0,0);
 % end_time = datenum(2019,11,20,12,0,0);
 
-start_time = datenum(2019,10,21,0,0,0);
-end_time = datenum(2019,10,22,0,0,0);
+% start_time = datenum(2019,11,19,12,0,0);
+% end_time = datenum(2019,11,20,12,0,0);
 
-sensor_choice = 3;
+sensor_choice = 2;
 
 %% Setup
 
@@ -114,6 +114,11 @@ if isempty(start_index), error('Start time not found.'), end
 
 mab = cmab./100;
 tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal);
+
+% Cutoffs between types of waves (in seconds)
+max_period_wind = 2.5; 
+max_period_swell = 25;
+max_period_igw = 250;
 
 %% Machinery
 
@@ -212,6 +217,7 @@ end
 % get_conditions
 load conditions.mat
 load tbb_wind.mat
+load buoy_spectra.mat
 
 % Spring-Neap Index
 % Every m hours, compute index based off min-max...?
@@ -231,18 +237,18 @@ sni.value = (tmp_diffs-min(tmp_diffs))./(max(tmp_diffs)-min(tmp_diffs));
 
 %% Moments
 
-% Wind (1 to 0.125 Hz)
-[~,si] = min(abs(freq - 0.125));
+% Wind 
+[~,si] = min(abs(freq - 1/max_period_wind));
 m0_wind = sum(running_S(si:end).*freq(si:end));
 
-% Swell (0.125 to 0.05 Hz)
-[~,si] = min(abs(freq - 0.05));
-[~,ei] = min(abs(freq - 0.125));
+% Swell
+[~,si] = min(abs(freq - 1/max_period_swell));
+[~,ei] = min(abs(freq - 1/max_period_wind));
 m0_swell = sum(running_S(si:ei).*freq(si:ei));
 
 % IGW (0.05 to 0.004 Hz)
-[~,si] = min(abs(freq - 0.004)); 
-[~,ei] = min(abs(freq - 0.05));
+[~,si] = min(abs(freq - 1/max_period_igw)); 
+[~,ei] = min(abs(freq - 1/max_period_swell));
 m0_igw = sum(running_S(si:ei).*freq(si:ei));
 
 Hs_wind = 4*sqrt(m0_wind);
@@ -255,32 +261,28 @@ fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
 
 if do_energy_correlations
 
-    % Let local wind waves be 1s to 8s (1 to .125 frequency)
-    
-    [~,si] = min(abs(freq - 0.125));
+    % Wind
+    [~,si] = min(abs(freq - 1/max_period_wind));
     wind_energy = mean(matrixS(:,si:end),2);
     
-    % Let swell be 8s to 20s (0.125 to 0.05 frequency)
-    
-    [~,si] = min(abs(freq - 0.05));
-    [~,ei] = min(abs(freq - 0.125));
+    % Swell
+    [~,si] = min(abs(freq - 1/max_period_swell));
+    [~,ei] = min(abs(freq - 1/max_period_wind));
     swell_energy = mean(matrixS(:,si:ei),2);
     
-    % Let igw be 20s to 5min (0.05 to 0.004 0.0033333... frequency)
-    
-    [~,si] = min(abs(freq - 0.004)); %0.00333));
-    [~,ei] = min(abs(freq - 0.05));
+    % IGW
+    [~,si] = min(abs(freq - 1/max_period_igw)); 
+    [~,ei] = min(abs(freq - 1/max_period_swell));
     igw_energy = mean(matrixS(:,si:ei),2);
     
-    % Let seiches be 5min to 30min (0.003333... to 0.00055555... frequency)
-    
-    [~,si] = min(abs(freq - 0.000555));
-    [~,ei] = min(abs(freq - 0.00333));
-    seiche_energy = mean(matrixS(:,si:ei),2);
+    % Seiche
+    [~,ei] = min(abs(freq - 1/max_period_igw));
+    seiche_energy = mean(matrixS(:,2:ei),2);
 
     % Interpolate conditions onto energy times
     % Note, these don't account for direction of wind or swell. 
     wind_for_corr = interp1(datenum(tbb_wind.time),tbb_wind.spd,datenum(ea_times)); % Note, using TBB wind here
+    wind_for_corr = interp1(datenum(wind.time),wind.spd,datenum(ea_times));
     swell_for_corr = interp1(datenum(swell.time),swell.hgt,datenum(ea_times));
     sni_for_corr = interp1(datenum(sni.time),sni.value,datenum(ea_times));
     
@@ -289,15 +291,14 @@ if do_energy_correlations
     plot(datenum(ea_times),wind_energy./max(wind_energy));
     plot(datenum(ea_times),swell_energy./max(swell_energy));
     plot(datenum(ea_times),igw_energy./max(igw_energy));
-%     plot(datenum(ea_times),seiche_energy./max(seiche_energy));
+    plot(datenum(ea_times),seiche_energy./max(seiche_energy));
     plot(datenum(trimmed_times),eta./max(eta),'g:');
     xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
     title(['Normalized Energy from Wind, Swell, IGW, Seiche Bands at ' labels{sensor_choice}]);
-    legend('< 8s','8s to 20s','20s to 250s');%,'5min to 30min');
+    legend('Sea','Swell','IGW','Seiche','water surface');
     
     % For cross- and auto-correlation...
-    
-%     R = corrcoef(swell_for_corr,swell_energy); R = R(2);
+    R = corrcoef(wind_for_corr,wind_energy); R = R(2)
 %     corrcoef(sni_for_corr(4:1347),igw_energy(4:1347))
 
 %     [acf,lags,~] = autocorr(igw_energy);
@@ -309,7 +310,6 @@ end
 
 logSt = logSt'; % Transpose! 
 matrixSfreq = matrixSfreq';
-% logSfreq = logSfreq';
 
 if make_spectra_plot
     figure
@@ -382,6 +382,8 @@ if make_spectra_plot
     linkaxes(ff,'x');
 end
 
+%% "Big Spectrum" Plotting
+
 if visualize_big_spectra
     figure
     if variance_preserving
@@ -406,10 +408,10 @@ if visualize_big_spectra
     [~,ei] = min(abs(freq - 0.1));
     
     % Or maybe just 0.05 Hz to the end, per Hughes et al 2014
-    [~,si] = min(abs(freq - 0.05));
+%     [~,si] = min(abs(freq - 0.05));
     
     % Just get the high-freq end?
-    [~,si] = min(abs(freq - 0.4)); % Use this to test the high-freq end
+%     [~,si] = min(abs(freq - 0.4)); % Use this to test the high-freq end
 
 %     fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
     fitcoeff = polyfit(logfreq(si:end),logBigS(si:end),1);
