@@ -3,14 +3,14 @@
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
-adjust_pressure = 0;
+adjust_pressure = 1; % Default is 1
 make_spectra_plot = 1;
 visualize_conditions = 1;
-use_residual_spectra = 0;
-use_windowing = 0;
+use_residual_spectra = 0; % Default is 0
+use_windowing = 0; % Default is 0
 do_energy_correlations = 0;
 visualize_big_spectra = 1;
-variance_preserving = 1;
+variance_preserving = 1; % Default is 1
 
 %% Data Controls
 
@@ -31,33 +31,28 @@ n_smooth = 5;
 % For FIRST Sensor Set
 % start_time = datenum(2019,6,4,12,0,0);
 % end_time = datenum(2019,7,16,0,0,0);
-% load RBR_data/20190717/tomales_rbrs.mat
 % LL, PPN, PPS, SB, WB, SL, TB
 cmab = [460, 20, 14, 47, 25, 116, 30];
 
 % For SECOND Sensor Set
 % start_time = datenum(2019,7,18,0,0,0);
 % end_time = datenum(2019,8,29,0,0,0);
-% load RBR_data/20190829/tomales_rbrs.mat
 % LL, PPS, SL, TB, TP, WB
 % cmab = [460, 14, 116, 30, 3, 25];
 
 % For THIRD Sensor Set
 % start_time = datenum(2019,8,30,0,0,0);
 % end_time = datenum(2019,9,26,0,0,0);
-% load RBR_data/20190927/tomales_rbrs.mat
-% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP ...
 % LL, PPN, SB, SL
 % cmab = [460, 20, 14, 116];
 
 % For FOURTH Sensor Set
 start_time = datenum(2019,9,28,0,0,0);
-end_time = datenum(2019,11,24,0,0,0);
-% load RBR_data/20191124/tomales_rbrs.mat
+end_time = datenum(2019,11,21,0,0,0);
 load rbr_data_deployment_4.mat
-% LL, SB, PPN
-% Note LL data in this deployment is questionable
-cmab = [460, 14, 20];
+% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP ...
+% LL, SB, PPN, TP
+cmab = [460, 14, 20, 3];
 
 % tomales_rbrs.mat has labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
 
@@ -81,7 +76,7 @@ cmab = [460, 14, 20];
 % start_time = datenum(2019,11,19,12,0,0);
 % end_time = datenum(2019,11,20,12,0,0);
 
-sensor_choice = 2;
+sensor_choice = 4;
 
 %% Setup
 
@@ -103,6 +98,9 @@ depth_signal = rbr_depths_adjusted{sensor_choice};
 times = datenum(rbr_times{sensor_choice});
 start_index = find(times == start_time);
 end_index = find(times == end_time);
+if isempty(start_index) || isempty(end_index)
+    error('Start or End Time index not found. Check dates and such.');
+end
 trimmed_depth_signal = depth_signal(start_index:end_index); 
 trimmed_times = rbr_times{sensor_choice}(start_index:end_index); % Comes as datetimes
 
@@ -116,7 +114,7 @@ mab = cmab./100;
 tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal);
 
 % Cutoffs between types of waves (in seconds)
-max_period_wind = 2.5; 
+max_period_wind = 3;
 max_period_swell = 25;
 max_period_igw = 250;
 
@@ -400,7 +398,7 @@ if visualize_big_spectra
         semilogx(freq,low_tide_running_S.*freq,'g');
         ylabel('Variance Per Hz');
         legend('Total Running','High Tide','Med Tide','Low Tide');
-        axis([min(freq),max(freq),0,3*10^-5]);
+        axis([min(freq),max(freq),0,5*10^-5]);
     else
 %         loglog(freq,big_average_S,'b');
 %         hold on
