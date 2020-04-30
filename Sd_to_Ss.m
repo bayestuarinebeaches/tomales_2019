@@ -8,7 +8,7 @@ function Ss = Sd_to_Ss(ts,mab,W,Sd,varargin)
 
 % Lukas WinklerPrins
 % lukas_wp@berkeley.edu
-% 3 April 2020
+% 29 April 2020
 
 % NEED TO FINISH HIGH-FREQUENCY CUTOFF STUFF
 
@@ -19,12 +19,11 @@ function Ss = Sd_to_Ss(ts,mab,W,Sd,varargin)
     end
     % N is the empirical correction factor
     
-    avg_mab = mean(ts);
-    kh = qkhfs(W,avg_mab);
-    kc = qkhfs(W,mab);
-    Kp = cosh(kc)./cosh(kh);
-    % Kp is the pressure response factor
-    Ss = Sd.*(N./Kp).^2;
+    avg_depth = mean(ts);
+    kh = qkhfs(W,avg_depth); % k * water depth
+    kc = qkhfs(W,mab); % k * height above bed
+    K_p = cosh(kc)./cosh(kh); % Pressure Response Factor
+    Ss = Sd.*(N./K_p).^2;
     
     % Find index of high-frequency cutoff
     g = 9.80665;

@@ -1,16 +1,5 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 26 April 2020
-
-%% Binary Choices
-% "1" turns them on, "0" turns them off
-adjust_pressure = 1; % Default is 1
-make_spectra_plot = 1;
-visualize_conditions = 1;
-use_residual_spectra = 0; % Default is 0
-use_windowing = 0; % Default is 0
-do_energy_correlations = 0;
-visualize_big_spectra = 1;
-variance_preserving = 1; % Default is 1
+% Last Edited 30 April 2020
 
 %% Data Controls
 
@@ -19,11 +8,7 @@ ea_spacing = 1; % What is the spacing between each ensemble?
 window_length = 3; % Each ensemble represents how many hours? 
 instance_length = 0.75; % What is the length of each instance in an ensemble?
 
-% 6/12/4 is a good combo (smear over a tide)
-% 3/24/3 can be nice for slow stuff
-
-% 1 /  3 / 0.75
-% 3 / 25 / 0.75
+% 1 /  3 / 0.75 has settled out to be the default
 
 % How many points do you want to use for the moving average of S? 
 n_smooth = 5;
@@ -50,16 +35,16 @@ cmab = [460, 20, 14, 47, 25, 116, 30];
 start_time = datenum(2019,9,28,0,0,0);
 end_time = datenum(2019,11,21,0,0,0);
 load rbr_data_deployment_4.mat
-% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP ...
 % LL, SB, PPN, TP
+% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
 cmab = [460, 14, 20, 3];
 
 % tomales_rbrs.mat has labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
 
 % DAYS OF INTEREST
 % Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
-% start_time = datenum(2019,9,28,12,0,0);
-% end_time = datenum(2019,9,29,12,0,0);
+start_time = datenum(2019,9,28,12,0,0);
+end_time = datenum(2019,9,29,12,0,0);
 
 % % Oct 19-Oct 19 - Windy, swell arrives, some
 % start_time = datenum(2019,10,17,0,0,0);
@@ -68,15 +53,32 @@ cmab = [460, 14, 20, 3];
 % % Nov 15-16 - Windy, bigger swell arrives, Lukas' Birthday
 % start_time = datenum(2019,11,15,6,0,0);
 % end_time = datenum(2019,11,16,18,0,0);
-% 
+
 % % Nov 20-21 - bigger waves, from local wind? 
 % start_time = datenum(2019,11,19,0,0,0);
 % end_time = datenum(2019,11,20,12,0,0);
 
-% start_time = datenum(2019,11,19,12,0,0);
-% end_time = datenum(2019,11,20,12,0,0);
+% Nov 7-9 - 12s consistent swell, very light winds
+% start_time = datenum(2019,11,7,12,0,0);
+% end_time = datenum(2019,11,9,0,0,0);
 
-sensor_choice = 4;
+% sensor_choice = 4;
+
+%% Binary Choices
+% "1" turns them on, "0" turns them off
+
+% Mechanical Options
+adjust_pressure = 1; % Default is 1
+variance_preserving = 1; % Default is 1
+use_t_tide = 1; % Default is 1, turn off if very short time window
+use_windowing = 0; % Default is 0
+
+% Visualization Options
+make_spectra_plot = 1;
+visualize_conditions = 1;
+use_residual_spectra = 0; 
+do_energy_correlations = 0;
+visualize_big_spectra = 1;
 
 %% Setup
 
@@ -105,8 +107,13 @@ trimmed_depth_signal = depth_signal(start_index:end_index);
 trimmed_times = rbr_times{sensor_choice}(start_index:end_index); % Comes as datetimes
 
 % Remove the tidal signal using t_tide (https://www.eoas.ubc.ca/~rich/)
-[tidestruc,d_out] = t_tide(trimmed_depth_signal,T/3600,'output','none');
-eta = trimmed_depth_signal - d_out;
+if use_t_tide
+    [~,d_out] = t_tide(trimmed_depth_signal,T/3600,'output','none');
+    eta = trimmed_depth_signal - d_out;
+else
+    eta = trimmed_depth_signal;
+    % Unadjusted!!!
+end
 
 if isempty(start_index), error('Start time not found.'), end
 
@@ -123,7 +130,7 @@ max_period_igw = 250;
 [W,big_average_S] = f_ensemble_average_spectra(T,eta,instance_length*60*60,5);
 
 if adjust_pressure
-    big_average_S = Sd_to_Ss(eta,mab(sensor_choice),W,big_average_S);
+    big_average_S = Sd_to_Ss(trimmed_depth_signal,mab(sensor_choice),W,big_average_S);
 end
 
 measurements_per_window = window_length*60*60*fs;
@@ -204,7 +211,8 @@ logBigS = log10(big_average_S);
 logRunningS = log10(running_S);
 if use_residual_spectra
     for nn = 1:n_insts
-        logSt(nn,:) = logS(nn,:) - logRunningS; % Could subtract logBig_S instead, but it doesn't make as much sense with windowing and such. 
+        logSt(nn,:) = logS(nn,:) - logRunningS; 
+        % Could subtract logBig_S instead, but it doesn't make as much sense with windowing and such. 
     end
 else
     logSt = logS;
@@ -253,7 +261,7 @@ Hs_wind = 4*sqrt(m0_wind);
 Hs_swell = 4*sqrt(m0_swell);
 Hs_igw = 4*sqrt(m0_igw);
 
-fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
+% fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
 
 %% Correlations
 
@@ -409,21 +417,40 @@ if visualize_big_spectra
     xlabel('Frequency (Hz)');
     
     % OK actually we're just gonna fit to the juicy middle part...
-    [~,si] = min(abs(freq - 0.001));
+    [~,si] = min(abs(freq - 0.01));
     [~,ei] = min(abs(freq - 0.1));
     
     % Or maybe just 0.05 Hz to the end, per Hughes et al 2014
 %     [~,si] = min(abs(freq - 0.05));
-    
-    % Just get the high-freq end?
-%     [~,si] = min(abs(freq - 0.4)); % Use this to test the high-freq end
 
 %     fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
     fitcoeff = polyfit(logfreq(si:end),logBigS(si:end),1);
     
     fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 
-    title(['Arithmetic Mean of ' num2str(instance_length) '-hour Instance Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
+    title(['Arithmetic Mean of ' num2str(instance_length) '-hour Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
 end
 
+%% Dissipation Stuff
+
+% First, need to find energy flux for each frequency bucket. 
+% Energy Flux = Group Celerity * Energy Density
+
+g = 9.80665;
+
+% All of these are vectors, values for each frequency (really, W) value
+kh = qkhfs(W,mean(trimmed_depth_signal)); % Oy, taking in a lot of time here...
+k = kh./mean(trimmed_depth_signal);
+Cp = ((g./k).*tanh(kh)).^0.5;
+Cg = Cp.*(0.5+kh./sinh(2.*kh));
+
+eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
+
+[~,si] = min(abs(start_time - datenum(buoy_spectra.time)));
+[~,ei] = min(abs(end_time - datenum(buoy_spectra.time)));
+mean_buoy_spectra = mean(buoy_spectra.spectra(si:ei,:));
+
+Cg_buoy = (g/(4*pi)).*(1./buoy_spectra.freq); % Using deep-water assumption
+
+buoy_energy_flux = mean_buoy_spectra.*Cg_buoy;
 
