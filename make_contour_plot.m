@@ -43,8 +43,8 @@ cmab = [460, 14, 20, 3];
 
 % DAYS OF INTEREST
 % Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
-start_time = datenum(2019,9,28,12,0,0);
-end_time = datenum(2019,9,29,12,0,0);
+% start_time = datenum(2019,9,28,12,0,0);
+% end_time = datenum(2019,9,29,12,0,0);
 
 % % Oct 19-Oct 19 - Windy, swell arrives, some
 % start_time = datenum(2019,10,17,0,0,0);
@@ -64,13 +64,19 @@ end_time = datenum(2019,9,29,12,0,0);
 
 % sensor_choice = 4;
 
+% start_time = datenum(2019,9,28,6,0,0);
+% end_time = datenum(2019,9,29,0,0,0);
+
+start_time = datenum(2019,11,20,0,0,0);
+end_time = datenum(2019,11,20,18,0,0);
+
 %% Binary Choices
 % "1" turns them on, "0" turns them off
 
 % Mechanical Options
 adjust_pressure = 1; % Default is 1
 variance_preserving = 1; % Default is 1
-use_t_tide = 1; % Default is 1, turn off if very short time window
+use_t_tide = 1; % Default is 1, turn off if very short time window...
 use_windowing = 0; % Default is 0
 
 % Visualization Options
@@ -82,8 +88,12 @@ visualize_big_spectra = 1;
 
 %% Setup
 
-fprintf(['Running stuff for ' labels{sensor_choice} 'with %d, %d, %d.\n'],ea_spacing,window_length,instance_length);
+fprintf(['Running stuff for ' labels{sensor_choice} ' with %.2f, %.2f, %.2f.\n'],ea_spacing,window_length,instance_length);
 
+if end_time - start_time < 0.75
+    use_t_tide = 0;
+    fprintf('Time window less than 18 hours: will not use t_tide to de-tide.\n');
+end
 if instance_length > window_length, error('Ensemble Instance length must be smaller than the averaging window length.'), end
 if window_length < ea_spacing, error('Right now, code requires windows be longer than ensemble spacing.'), end
 if adjust_pressure
@@ -144,6 +154,7 @@ matrixS = zeros(n_insts,length(big_average_S));
 matrixSfreq = zeros(size(matrixS));
 % Each row in matrix_E is a power spectra for window. 
 % The earlier time is at the top, the latter time at the bottom. 
+
 high_tide_running_S = zeros(1,length(big_average_S));
 n_high_tide_S = 0;
 med_tide_running_S = zeros(1,length(big_average_S));
@@ -319,7 +330,7 @@ matrixSfreq = matrixSfreq';
 
 if make_spectra_plot
     figure
-    sgtitle([labels{sensor_choice} ' Spectra, ' num2str(ea_spacing) '-hr Spacing, ' num2str(window_length) '-hr Window, ' num2str(instance_length) '-hour Ensembles ' extra]);
+    sgtitle([labels{sensor_choice} ' Spectra, ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '. ' extra]);
 
     if visualize_conditions
         ff(1) = subplot(4,2,[1,2,3,4]);
@@ -388,25 +399,32 @@ if make_spectra_plot
         ylim([0 20]);
     %     xlim([datetime(start_time,'ConvertFrom','datenum') datetime(end_time,'ConvertFrom','datenum')]);
         xlim([start_time end_time]);
-
+        
+        linkaxes(ff,'x');
     end
 
-    linkaxes(ff,'x');
 end
 
 %% "Big Spectrum" Plotting
+
+start_color = [149,111,49]./255; % light brown
+end_color = [51,237,233]./255; % aqua
+colors = [linspace(start_color(1),end_color(1),3)',linspace(start_color(2),end_color(2),3)',linspace(start_color(3),end_color(3),3)'];
 
 if visualize_big_spectra
     figure
     if variance_preserving
         semilogx(freq,running_S.*freq,'k');
         hold on
-        semilogx(freq,high_tide_running_S.*freq,'b');
-        semilogx(freq,med_tide_running_S.*freq,'r');
-        semilogx(freq,low_tide_running_S.*freq,'g');
+        semilogx(freq,high_tide_running_S.*freq,'Color',colors(1,:));
+        semilogx(freq,med_tide_running_S.*freq,'Color',colors(2,:));
+        semilogx(freq,low_tide_running_S.*freq,'Color',colors(3,:));
         ylabel('Variance Per Hz');
         legend('Total Running','High Tide','Med Tide','Low Tide');
-        axis([min(freq),max(freq),0,5*10^-5]);
+%         tmp_max = max([high_tide_running_S med_tide_running_S low_tide_running_S]);
+        axis([min(freq),max(freq),0,1*10^-4]);
+        % 2*10^-3 is a good alternative upper bound
+        
     else
 %         loglog(freq,big_average_S,'b');
 %         hold on
@@ -417,21 +435,20 @@ if visualize_big_spectra
     xlabel('Frequency (Hz)');
     
     % OK actually we're just gonna fit to the juicy middle part...
-    [~,si] = min(abs(freq - 0.01));
-    [~,ei] = min(abs(freq - 0.1));
+    [~,si] = min(abs(freq - 10^-2));
+    [~,ei] = min(abs(freq - 10^-1));
     
     % Or maybe just 0.05 Hz to the end, per Hughes et al 2014
-%     [~,si] = min(abs(freq - 0.05));
+%     [~,si] = min(abs(freq - 0.05)); % to end
 
-%     fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
-    fitcoeff = polyfit(logfreq(si:end),logBigS(si:end),1);
+fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
     
     fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 
-    title(['Arithmetic Mean of ' num2str(instance_length) '-hour Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
+    title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
 end
 
-%% Dissipation Stuff
+%% Energy Flux & Dissipation Stuff
 
 % First, need to find energy flux for each frequency bucket. 
 % Energy Flux = Group Celerity * Energy Density
@@ -445,12 +462,4 @@ Cp = ((g./k).*tanh(kh)).^0.5;
 Cg = Cp.*(0.5+kh./sinh(2.*kh));
 
 eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
-
-[~,si] = min(abs(start_time - datenum(buoy_spectra.time)));
-[~,ei] = min(abs(end_time - datenum(buoy_spectra.time)));
-mean_buoy_spectra = mean(buoy_spectra.spectra(si:ei,:));
-
-Cg_buoy = (g/(4*pi)).*(1./buoy_spectra.freq); % Using deep-water assumption
-
-buoy_energy_flux = mean_buoy_spectra.*Cg_buoy;
 
