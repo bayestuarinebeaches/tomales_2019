@@ -1,5 +1,5 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 30 April 2020
+% Last Edited 11 May 2020
 
 %% Data Controls
 
@@ -62,13 +62,15 @@ cmab = [460, 14, 20, 3];
 % start_time = datenum(2019,11,7,12,0,0);
 % end_time = datenum(2019,11,9,0,0,0);
 
-% sensor_choice = 4;
+% ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
+% THIS SCRIPT (I.E. IN META_RUN.M)
+sensor_choice = 3;
 
 % start_time = datenum(2019,9,28,6,0,0);
 % end_time = datenum(2019,9,29,0,0,0);
 
-start_time = datenum(2019,11,20,0,0,0);
-end_time = datenum(2019,11,20,18,0,0);
+% start_time = datenum(2019,11,20,0,0,0);
+% end_time = datenum(2019,11,20,18,0,0);
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
@@ -96,10 +98,9 @@ if end_time - start_time < 0.75
 end
 if instance_length > window_length, error('Ensemble Instance length must be smaller than the averaging window length.'), end
 if window_length < ea_spacing, error('Right now, code requires windows be longer than ensemble spacing.'), end
+extra = '';
 if adjust_pressure
-    extra = 'with attenuation';
-else
-    extra = '';
+    extra = [extra 'with attenuation'];
 end
 
 T = seconds(rbr_times{1}(2)-rbr_times{1}(1)); % seconds
@@ -125,10 +126,13 @@ else
     % Unadjusted!!!
 end
 
-if isempty(start_index), error('Start time not found.'), end
+% Flatten any bottoming-out chunks ...?
+if min(trimmed_depth_signal) <= 0, fprintf('Depth signal bottoms out. Take note! Setting values to 0.\n'), end
+    
+trimmed_depth_signal(trimmed_depth_signal <= 0.01) = 0;
 
 mab = cmab./100;
-tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal);
+tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal); % in m
 
 % Cutoffs between types of waves (in seconds)
 max_period_wind = 3;
@@ -148,12 +152,14 @@ measurements_per_window = window_length*60*60*fs;
 % Decision: EA spacing dominates, we will clip timeseries at end if the
 % combination of parameters doesn't "fit" perfectly into the timeseries. 
 
-n_insts = floor((length(eta) - measurements_per_window)/(ea_spacing*60*60*fs));
+n_windows = floor((length(eta) - measurements_per_window)/(ea_spacing*60*60*fs));
 
-matrixS = zeros(n_insts,length(big_average_S));
+matrixS = zeros(n_windows,length(big_average_S));
 matrixSfreq = zeros(size(matrixS));
 % Each row in matrix_E is a power spectra for window. 
 % The earlier time is at the top, the latter time at the bottom. 
+
+window_depths = zeros(1,n_windows);
 
 high_tide_running_S = zeros(1,length(big_average_S));
 n_high_tide_S = 0;
@@ -165,14 +171,16 @@ n_low_tide_S = 0;
 ea_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
 running_S = zeros(size(big_average_S));
 
-for nn = 0:n_insts-1
+for nn = 0:n_windows-1
     si = nn*ea_spacing*60*60*fs + 1;
     ei = nn*ea_spacing*60*60*fs + measurements_per_window;
     
     if ei > length(eta), error('Encountered an issue with indexing the signal.'), end
     
     ensemble = eta(si:ei);
-    ensemble = detrend(ensemble,3);
+    ensemble = detrend(ensemble,2); % 2 or 3?
+    
+    window_depths(nn+1) = mean(trimmed_depth_signal(si:ei));
     
     if use_windowing
         % Uses Tukey Window, per recommendation here: https://arena-attachments.s3.amazonaws.com/5331399/0509f4edab72d8fb7e4628a7f6fcea3a.pdf?1571926476
@@ -209,7 +217,7 @@ end
 high_tide_running_S = high_tide_running_S./n_high_tide_S;
 med_tide_running_S = med_tide_running_S./n_med_tide_S;
 low_tide_running_S = low_tide_running_S./n_low_tide_S;
-running_S = running_S./n_insts;
+running_S = running_S./n_windows;
 
 
 %% Adjustment 
@@ -221,7 +229,7 @@ logSt = zeros(size(logS));
 logBigS = log10(big_average_S);
 logRunningS = log10(running_S);
 if use_residual_spectra
-    for nn = 1:n_insts
+    for nn = 1:n_windows
         logSt(nn,:) = logS(nn,:) - logRunningS; 
         % Could subtract logBig_S instead, but it doesn't make as much sense with windowing and such. 
     end
@@ -463,3 +471,10 @@ Cg = Cp.*(0.5+kh./sinh(2.*kh));
 
 eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
 
+%% Tidal Depth Histogram
+
+figure
+histogram(window_depths,10,'Normalization','probability');
+xlabel('Tidal Depth of Window');
+ylabel('Proportion');
+title(labels{sensor_choice});
