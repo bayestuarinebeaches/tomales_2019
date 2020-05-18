@@ -7,9 +7,9 @@
 % labels = {'Lawsons Landing','Pelican Pt N','Pelican Pt S','Seal Beach','Wall Beach','Sacramento Landing','Tomales Beach'};
 
 % Round Two
-% prepend = 'RBR_data/20190829/';
-% files = {'20190829_LL_124166_data.txt','20190829_PS_124162_data.txt','20190829_SL_124168_data.txt','20190829_TB_124165_data.txt','20190829_TP_124164_data.txt','20190829_WB_124161_data.txt'};
-% labels = {'Lawsons Landing','Pelican Pt S','Sacramento Landing','Tomales Beach','Tomasini Point','Wall Beach'};
+prepend = 'RBR_data/20190829/';
+files = {'20190829_LL_124166_data.txt','20190829_PS_124162_data.txt','20190829_SL_124168_data.txt','20190829_TB_124165_data.txt','20190829_TP_124164_data.txt','20190829_WB_124161_data.txt'};
+labels = {'Lawsons Landing','Pelican Pt S','Sacramento Landing','Tomales Beach','Tomasini Point','Wall Beach'};
 
 % Round Three
 % prepend = 'RBR_data/20190927/';
@@ -17,7 +17,7 @@
 % labels = {'Lawsons Landing','Pelican Pt N','Seal Beach','Sacramento Landing'};
 
 % Round Four
-prepend = 'RBR_data/20191124/';
+% prepend = 'RBR_data/20191124/';
 % files = {'20191124_LL_124164_data.txt','20191124_SB_124165_data.txt','20191210_PN_124166_data.txt','20191210_TP_124162_data.txt'};
 % labels = {'Lawsons Landing','Seal Beach','Pelican Point N','Tomasini Point'};
 
@@ -79,7 +79,7 @@ for kk = 1:length(files)
     
 end
 
-save rbr_data_deployment_4.mat files labels rbr_times rbr_pressures rbr_depths_adjusted
+save rbr_data_deployment_.mat files labels rbr_times rbr_pressures rbr_depths_adjusted
 
 %% Extra Zone
 % 

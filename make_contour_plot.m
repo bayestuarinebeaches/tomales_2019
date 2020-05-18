@@ -16,19 +16,31 @@ n_smooth = 5;
 % For FIRST Sensor Set
 % start_time = datenum(2019,6,4,12,0,0);
 % end_time = datenum(2019,7,16,0,0,0);
-% LL, PPN, PPS, SB, WB, SL, TB
+%        LL  PN  PS  SB  WB  SL   TB
 cmab = [460, 20, 14, 47, 25, 116, 30];
 
 % For SECOND Sensor Set
+% load rbr_data_deployment_2.mat
 % start_time = datenum(2019,7,18,0,0,0);
 % end_time = datenum(2019,8,29,0,0,0);
-% LL, PPS, SL, TB, TP, WB
+% % LL, PS, SL, TB, TP, WB
+% % N.B. Wall Beach got mangled on Aug 5?try to go before or after this
 % cmab = [460, 14, 116, 30, 3, 25];
 
+% Good sea breeze pattern days... 
+% start_time = datenum(2019,8,17,0,0,0);
+% end_time = datenum(2019,8,24,0,0,0);
+
+% Visible Seiche (LL)...?
+% start_time = datenum(2019,8,9,0,0,0);
+% end_time = datenum(2019,8,10,0,0,0);
+
 % For THIRD Sensor Set
+% load rbr_data_deployment_3.mat
 % start_time = datenum(2019,8,30,0,0,0);
-% end_time = datenum(2019,9,26,0,0,0);
-% LL, PPN, SB, SL
+% end_time = datenum(2019,9,22,0,0,0);
+% % Note big time jump error in LL on Sept 23rd
+% % LL, PPN, SB, SL
 % cmab = [460, 20, 14, 116];
 
 % For FOURTH Sensor Set
@@ -58,19 +70,13 @@ cmab = [460, 14, 20, 3];
 % start_time = datenum(2019,11,19,0,0,0);
 % end_time = datenum(2019,11,20,12,0,0);
 
-% Nov 7-9 - 12s consistent swell, very light winds
+% Nov 7-8 - 12s consistent swell, very light winds
 % start_time = datenum(2019,11,7,12,0,0);
-% end_time = datenum(2019,11,9,0,0,0);
+% end_time = datenum(2019,11,8,18,0,0);
 
 % ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
 % THIS SCRIPT (I.E. IN META_RUN.M)
-sensor_choice = 3;
-
-% start_time = datenum(2019,9,28,6,0,0);
-% end_time = datenum(2019,9,29,0,0,0);
-
-% start_time = datenum(2019,11,20,0,0,0);
-% end_time = datenum(2019,11,20,18,0,0);
+sensor_choice = 4;
 
 %% Binary Choices
 % "1" turns them on, "0" turns them off
@@ -80,15 +86,20 @@ adjust_pressure = 1; % Default is 1
 variance_preserving = 1; % Default is 1
 use_t_tide = 1; % Default is 1, turn off if very short time window...
 use_windowing = 0; % Default is 0
+use_median_power = 0; % Not fully-functional yet. 
 
 % Visualization Options
 make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0; 
-do_energy_correlations = 0;
+do_energy_wave_correlations = 1;
 visualize_big_spectra = 1;
+visualize_morn_aft_eve = 1;
+visualize_high_med_low = 0;
 
 %% Setup
+
+max_varpreserv_power = 1*10^-4;
 
 fprintf(['Running stuff for ' labels{sensor_choice} ' with %.2f, %.2f, %.2f.\n'],ea_spacing,window_length,instance_length);
 
@@ -127,7 +138,7 @@ else
 end
 
 % Flatten any bottoming-out chunks ...?
-if min(trimmed_depth_signal) <= 0, fprintf('Depth signal bottoms out. Take note! Setting values to 0.\n'), end
+if min(trimmed_depth_signal) <= 0, fprintf('!!! Depth signal bottoms out. Take note! Setting values to 0 !!!\n'), end
     
 trimmed_depth_signal(trimmed_depth_signal <= 0.01) = 0;
 
@@ -160,6 +171,9 @@ matrixSfreq = zeros(size(matrixS));
 % The earlier time is at the top, the latter time at the bottom. 
 
 window_depths = zeros(1,n_windows);
+window_Hs_wind = zeros(1,n_windows);
+window_Hs_swell = zeros(1,n_windows);
+window_Hs_igw = zeros(1,n_windows);
 
 high_tide_running_S = zeros(1,length(big_average_S));
 n_high_tide_S = 0;
@@ -168,7 +182,14 @@ n_med_tide_S = 0;
 low_tide_running_S = zeros(1,length(big_average_S));
 n_low_tide_S = 0;
 
-ea_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
+morning_running_S = zeros(1,length(big_average_S));
+n_morning_S = 0;
+afternoon_running_S = zeros(1,length(big_average_S));
+n_afternoon_S = 0;
+evening_running_S = zeros(1,length(big_average_S));
+n_evening_S = 0;
+
+window_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
 running_S = zeros(size(big_average_S));
 
 for nn = 0:n_windows-1
@@ -189,7 +210,7 @@ for nn = 0:n_windows-1
         [W,S] = f_ensemble_average_spectra(T,ensemble,instance_length*60*60,n_smooth);
     end
      
-    ea_times(nn+1) = trimmed_times(nn*ea_spacing*60*60*fs+1+floor(measurements_per_window/2)); % These times are at center of interval.
+    window_times(nn+1) = trimmed_times(nn*ea_spacing*60*60*fs+1+floor(measurements_per_window/2)); % These times are at center of interval.
     
     if adjust_pressure
         S = Sd_to_Ss(ensemble,mab(sensor_choice),W,S);
@@ -206,21 +227,51 @@ for nn = 0:n_windows-1
         n_med_tide_S = n_med_tide_S + 1;
     end
         
+    if hour(window_times(nn+1)) <= 5
+        morning_running_S = morning_running_S + S;
+        n_morning_S = n_morning_S + 1;
+    elseif hour(window_times(nn+1)) > 5 && hour(window_times(nn+1)) < 18
+        afternoon_running_S = afternoon_running_S + S;
+        n_afternoon_S = n_afternoon_S + 1;
+    else
+        evening_running_S = evening_running_S + S;
+        n_evening_S = n_evening_S + 1;
+    end
     
     matrixS(nn+1,:) = movmean(S,5);
     running_S = running_S + S;
     freq = W./(2*pi);
-    
     matrixSfreq(nn+1,:) = matrixS(nn+1,:).*freq;
+    
+    % Wind 
+    [~,si] = min(abs(freq - 1/max_period_wind));
+    m0_wind = trapz(freq(si:end),S(si:end));
+
+    % Swell
+    [~,si] = min(abs(freq - 1/max_period_swell));
+    [~,ei] = min(abs(freq - 1/max_period_wind));
+    m0_swell = trapz(freq(si:ei),S(si:ei));
+
+    % IGW (0.05 to 0.004 Hz)
+    [~,si] = min(abs(freq - 1/max_period_igw)); 
+    [~,ei] = min(abs(freq - 1/max_period_swell));
+    m0_igw = trapz(freq(si:ei),S(si:ei));
+
+    window_Hs_wind(nn+1) = 4*sqrt(m0_wind);
+    window_Hs_swell(nn+1) = 4*sqrt(m0_swell);
+    window_Hs_igw(nn+1) = 4*sqrt(m0_igw);
 end
 
 high_tide_running_S = high_tide_running_S./n_high_tide_S;
 med_tide_running_S = med_tide_running_S./n_med_tide_S;
 low_tide_running_S = low_tide_running_S./n_low_tide_S;
+morning_running_S = morning_running_S./n_morning_S;
+afternoon_running_S = afternoon_running_S./n_afternoon_S;
+evening_running_S = evening_running_S./n_evening_S;
 running_S = running_S./n_windows;
 
 
-%% Adjustment 
+%% Adjustment, Log Scale Mgmt
     
 logfreq = log10(freq);
 logS = log10(matrixS);
@@ -237,6 +288,28 @@ else
     logSt = logS;
 end
 
+%% Overall Moments
+
+% Wind 
+[~,si] = min(abs(freq - 1/max_period_wind));
+m0_wind = trapz(freq(si:end),running_S(si:end));
+
+% Swell
+[~,si] = min(abs(freq - 1/max_period_swell));
+[~,ei] = min(abs(freq - 1/max_period_wind));
+m0_swell = trapz(freq(si:ei),running_S(si:ei));
+
+% IGW (0.05 to 0.004 Hz)
+[~,si] = min(abs(freq - 1/max_period_igw)); 
+[~,ei] = min(abs(freq - 1/max_period_swell));
+m0_igw = trapz(freq(si:ei),running_S(si:ei));
+
+Hs_wind = 4*sqrt(m0_wind);
+Hs_swell = 4*sqrt(m0_swell);
+Hs_igw = 4*sqrt(m0_igw);
+
+fprintf('Overall Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
+
 %% Conditions
 
 % get_conditions
@@ -247,88 +320,75 @@ load buoy_spectra.mat
 % Spring-Neap Index
 % Every m hours, compute index based off min-max...?
 % Kinda janky to smooth it out enough but let's give it a shot. 
-m = 8;
-n_chunks = floor(length(trimmed_depth_signal)./(m*60*60*fs));
-diffs = zeros(1,n_chunks);
-sni.time = [datetime(2020,1,1,1,1,1)];
-for ii = 0:n_chunks-1
-    si = floor(ii*m*60*60*fs + 1);
-    ei = floor((ii+1)*m*60*60*fs);
-    diffs(ii+1) = max(trimmed_depth_signal(si:ei)) - min(trimmed_depth_signal(si:ei));
-    sni.time(ii+1) = trimmed_times(ei);
-end
-tmp_diffs = movmean(movmean(diffs,3),8);
-sni.value = (tmp_diffs-min(tmp_diffs))./(max(tmp_diffs)-min(tmp_diffs));
-
-%% Moments
-
-% Wind 
-[~,si] = min(abs(freq - 1/max_period_wind));
-m0_wind = sum(running_S(si:end).*freq(si:end));
-
-% Swell
-[~,si] = min(abs(freq - 1/max_period_swell));
-[~,ei] = min(abs(freq - 1/max_period_wind));
-m0_swell = sum(running_S(si:ei).*freq(si:ei));
-
-% IGW (0.05 to 0.004 Hz)
-[~,si] = min(abs(freq - 1/max_period_igw)); 
-[~,ei] = min(abs(freq - 1/max_period_swell));
-m0_igw = sum(running_S(si:ei).*freq(si:ei));
-
-Hs_wind = 4*sqrt(m0_wind);
-Hs_swell = 4*sqrt(m0_swell);
-Hs_igw = 4*sqrt(m0_igw);
-
-% fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
+% m = 8;
+% n_chunks = floor(length(trimmed_depth_signal)./(m*60*60*fs));
+% diffs = zeros(1,n_chunks);
+% sni.time = [datetime(2020,1,1,1,1,1)];
+% for ii = 0:n_chunks-1
+%     si = floor(ii*m*60*60*fs + 1);
+%     ei = floor((ii+1)*m*60*60*fs);
+%     diffs(ii+1) = max(trimmed_depth_signal(si:ei)) - min(trimmed_depth_signal(si:ei));
+%     sni.time(ii+1) = trimmed_times(ei);
+% end
+% tmp_diffs = movmean(movmean(diffs,3),8);
+% sni.value = (tmp_diffs-min(tmp_diffs))./(max(tmp_diffs)-min(tmp_diffs));
 
 %% Correlations
 
-if do_energy_correlations
+if do_energy_wave_correlations
 
-    % Wind
-    [~,si] = min(abs(freq - 1/max_period_wind));
-    wind_energy = mean(matrixS(:,si:end),2);
-    
-    % Swell
-    [~,si] = min(abs(freq - 1/max_period_swell));
-    [~,ei] = min(abs(freq - 1/max_period_wind));
-    swell_energy = mean(matrixS(:,si:ei),2);
-    
-    % IGW
-    [~,si] = min(abs(freq - 1/max_period_igw)); 
-    [~,ei] = min(abs(freq - 1/max_period_swell));
-    igw_energy = mean(matrixS(:,si:ei),2);
-    
-    % Seiche
-    [~,ei] = min(abs(freq - 1/max_period_igw));
-    seiche_energy = mean(matrixS(:,2:ei),2);
+%     % Wind
+%     [~,si] = min(abs(freq - 1/max_period_wind));
+%     wind_energy = mean(matrixS(:,si:end),2);
+%     
+%     % Swell
+%     [~,si] = min(abs(freq - 1/max_period_swell));
+%     [~,ei] = min(abs(freq - 1/max_period_wind));
+%     swell_energy = mean(matrixS(:,si:ei),2);
+%     
+%     % IGW
+%     [~,si] = min(abs(freq - 1/max_period_igw)); 
+%     [~,ei] = min(abs(freq - 1/max_period_swell));
+%     igw_energy = mean(matrixS(:,si:ei),2);
+%     
+%     % Seiche
+%     [~,ei] = min(abs(freq - 1/max_period_igw));
+%     seiche_energy = mean(matrixS(:,2:ei),2);
 
     % Interpolate conditions onto energy times
     % Note, these don't account for direction of wind or swell. 
-    wind_for_corr = interp1(datenum(tbb_wind.time),tbb_wind.spd,datenum(ea_times)); % Note, using TBB wind here
-    wind_for_corr = interp1(datenum(wind.time),wind.spd,datenum(ea_times));
-    swell_for_corr = interp1(datenum(swell.time),swell.hgt,datenum(ea_times));
-    sni_for_corr = interp1(datenum(sni.time),sni.value,datenum(ea_times));
+%     wind_for_corr = interp1(datenum(tbb_wind.time),tbb_wind.spd,datenum(ea_times)); % Note, using TBB wind here
+%     wind_for_corr = interp1(datenum(wind.time),wind.spd,datenum(ea_times));
+%     swell_for_corr = interp1(datenum(swell.time),swell.hgt,datenum(ea_times));
+%     sni_for_corr = interp1(datenum(sni.time),sni.value,datenum(ea_times));
     
-    figure
-    hold on
-    plot(datenum(ea_times),wind_energy./max(wind_energy));
-    plot(datenum(ea_times),swell_energy./max(swell_energy));
-    plot(datenum(ea_times),igw_energy./max(igw_energy));
-    plot(datenum(ea_times),seiche_energy./max(seiche_energy));
-    plot(datenum(trimmed_times),eta./max(eta),'g:');
-    xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
-    title(['Normalized Energy from Wind, Swell, IGW, Seiche Bands at ' labels{sensor_choice}]);
-    legend('Sea','Swell','IGW','Seiche','water surface');
+%     figure
+%     hold on
+%     plot(datenum(ea_times),wind_energy./max(wind_energy));
+%     plot(datenum(ea_times),swell_energy./max(swell_energy));
+%     plot(datenum(ea_times),igw_energy./max(igw_energy));
+%     plot(datenum(ea_times),seiche_energy./max(seiche_energy));
+%     plot(datenum(trimmed_times),eta./max(eta),'g:');
+%     xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
+%     title(['Normalized Energy from Wind, Swell, IGW, Seiche Bands at ' labels{sensor_choice}]);
+%     legend('Sea','Swell','IGW','Seiche','water surface');
     
     % For cross- and auto-correlation...
-    R = corrcoef(wind_for_corr,wind_energy); R = R(2)
+%     R = corrcoef(wind_for_corr,wind_energy); R = R(2)
 %     corrcoef(sni_for_corr(4:1347),igw_energy(4:1347))
 
 %     [acf,lags,~] = autocorr(igw_energy);
 %     plot(lags.*ea_spacing,acf);
 
+    figure
+    plot(window_times,window_Hs_wind);
+    hold on
+    plot(window_times,window_Hs_swell);
+    plot(window_times,window_Hs_igw);
+    yyaxis right
+    plot(trimmed_times,trimmed_depth_signal,'g-');
+    legend('H_s Wind','H_s Swell','H_s IGW','Depth');
+    title([labels{sensor_choice} ' H_s, ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
 end
 
 %% Plotting
@@ -347,14 +407,14 @@ if make_spectra_plot
     % It is good to start at 2 to avoid inf. 
     if variance_preserving
         % Impose high & low values to fix scale bar. 
-        matrixSfreq(2,end) = 6*10^-4;
+        matrixSfreq(2,end) = max_varpreserv_power;
         matrixSfreq(2,end-1) = 0;
-        contourf(datenum(ea_times(:)),logfreq(2:end),matrixSfreq(2:end,:),15,'LineColor','none');
+        contourf(datenum(window_times(:)),logfreq(2:end),matrixSfreq(2:end,:),15,'LineColor','none');
     else
         % Impose high & low values to fix scale bar. 
         logSt(2,end) = -1;
         logSt(2,end-1) = -9;
-        contourf(datenum(ea_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
+        contourf(datenum(window_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
     end
     c = colorbar('east');
     if use_residual_spectra
@@ -364,7 +424,7 @@ if make_spectra_plot
     end
 
     % datetick('x',21);
-    xlim([datenum(ea_times(1)) datenum(ea_times(end))]);
+    xlim([datenum(window_times(1)) datenum(window_times(end))]);
     % new_ticks = linspace(datenum(ea_times(1)),datenum(ea_times(end)),8);
     % xticks(new_ticks);
     % new_tick_labels = {};
@@ -381,13 +441,13 @@ if make_spectra_plot
         ff(2) = subplot(4,2,[5,6]);
         yyaxis right
 
-        scatter(datenum(wind.time),wind.spd,'.');
+        scatter(datenum(tbb_wind.time),tbb_wind.spd,'.');
         ylim([0 20]);
         ylabel('Wind Speed (m/s)');
         yyaxis left
         hold on
-        scatter(datenum(wind.time),wind.dir,'o');
-        scatter(datenum(swell.time),swell.dir,'g+');
+        scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
+        scatter(datenum(swell.time),swell.dir,'go');
         ylabel('Direction (°)');
         ylim([0 360]); % weird outliers sometimes...
     %     xlim([datetime(start_time,'ConvertFrom','datenum') datetime(end_time,'ConvertFrom','datenum')]);
@@ -398,8 +458,7 @@ if make_spectra_plot
         plot(datenum(swell.time),swell.hgt,'+');
         ylabel('H_s (m)');
         hold on
-    %     plot(datenum(rbr_times{sensor_choice}),depth_signal,'g-');
-        plot(datenum(sni.time),sni.value.*5,'g-');
+%         plot(datenum(sni.time),sni.value.*5,'g-');
         plot(datenum(trimmed_times),trimmed_depth_signal,'k-');
         yyaxis right
         scatter(datenum(swell.time),swell.per,'.');
@@ -422,15 +481,30 @@ colors = [linspace(start_color(1),end_color(1),3)',linspace(start_color(2),end_c
 if visualize_big_spectra
     figure
     if variance_preserving
-        semilogx(freq,running_S.*freq,'k');
+        if use_median_power
+            semilogx(freq,median(matrixS).*freq,'k');
+        else
+            semilogx(freq,running_S.*freq,'k');
+        end
         hold on
-        semilogx(freq,high_tide_running_S.*freq,'Color',colors(1,:));
-        semilogx(freq,med_tide_running_S.*freq,'Color',colors(2,:));
-        semilogx(freq,low_tide_running_S.*freq,'Color',colors(3,:));
+        
+        if visualize_high_med_low
+            semilogx(freq,high_tide_running_S.*freq,'Color',colors(1,:));
+            semilogx(freq,med_tide_running_S.*freq,'Color',colors(2,:));
+            semilogx(freq,low_tide_running_S.*freq,'Color',colors(3,:));
+            legend('Total Running','High Tide','Med Tide','Low Tide');
+        end
+        
+        if visualize_morn_aft_eve
+            semilogx(freq,morning_running_S.*freq,'r');
+            semilogx(freq,afternoon_running_S.*freq,'g');
+            semilogx(freq,evening_running_S.*freq,'b');
+            legend('Total Running','Morning','Afternoon','Evening');
+        end
+        
         ylabel('Variance Per Hz');
-        legend('Total Running','High Tide','Med Tide','Low Tide');
 %         tmp_max = max([high_tide_running_S med_tide_running_S low_tide_running_S]);
-        axis([min(freq),max(freq),0,1*10^-4]);
+        axis([min(freq),max(freq),0,max_varpreserv_power]);
         % 2*10^-3 is a good alternative upper bound
         
     else
@@ -473,8 +547,8 @@ eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
 
 %% Tidal Depth Histogram
 
-figure
-histogram(window_depths,10,'Normalization','probability');
-xlabel('Tidal Depth of Window');
-ylabel('Proportion');
-title(labels{sensor_choice});
+% figure
+% histogram(window_depths,10,'Normalization','probability');
+% xlabel('Tidal Depth of Window');
+% ylabel('Proportion');
+% title(labels{sensor_choice});
