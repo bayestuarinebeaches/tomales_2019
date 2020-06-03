@@ -1,17 +1,9 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 11 May 2020
+% Last Edited 3 June 2020
 
-%% Data Controls
+%% Sensor Data
 
-% ALL THREE OF THE NEXT VARIABLES ARE IN HOURS
-ea_spacing = 1; % What is the spacing between each ensemble?
-window_length = 3; % Each ensemble represents how many hours? 
-instance_length = 0.75; % What is the length of each instance in an ensemble?
-
-% 1 /  3 / 0.75 has settled out to be the default
-
-% How many points do you want to use for the moving average of S? 
-n_smooth = 5;
+% Bring in labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
     
 % For FIRST Sensor Set
 % start_time = datenum(2019,6,4,12,0,0);
@@ -20,12 +12,19 @@ n_smooth = 5;
 cmab = [460, 20, 14, 47, 25, 116, 30];
 
 % For SECOND Sensor Set
-% load rbr_data_deployment_2.mat
-% start_time = datenum(2019,7,18,0,0,0);
-% end_time = datenum(2019,8,29,0,0,0);
-% % LL, PS, SL, TB, TP, WB
-% % N.B. Wall Beach got mangled on Aug 5?try to go before or after this
-% cmab = [460, 14, 116, 30, 3, 25];
+load rbr_data_deployment_2.mat
+start_time = datenum(2019,7,19,0,0,0);
+end_time = datenum(2019,8,29,0,0,0);
+% LL, PS, SL, TB, TP, WB
+% N.B. Wall Beach got mangled on Aug 5?try to go before or after this
+% Tomasini only deployed 8/1
+cmab = [460, 14, 116, 30, 3, 25];
+
+start_time = datenum(2019,8,6,0,0,0);
+
+% Random period to examine
+% start_time = datenum(2019,7,26,0,0,0);
+% end_time = datenum(2019,7,28,0,0,0);
 
 % Good sea breeze pattern days... 
 % start_time = datenum(2019,8,17,0,0,0);
@@ -34,6 +33,10 @@ cmab = [460, 20, 14, 47, 25, 116, 30];
 % Visible Seiche (LL)...?
 % start_time = datenum(2019,8,9,0,0,0);
 % end_time = datenum(2019,8,10,0,0,0);
+
+% Peak in Seiching noticeable again (LL?)
+% start_time = datenum(2019,7,24,6,0,0);
+% end_time = datenum(2019,7,25,18,0,0);
 
 % For THIRD Sensor Set
 % load rbr_data_deployment_3.mat
@@ -44,14 +47,13 @@ cmab = [460, 20, 14, 47, 25, 116, 30];
 % cmab = [460, 20, 14, 116];
 
 % For FOURTH Sensor Set
-start_time = datenum(2019,9,28,0,0,0);
-end_time = datenum(2019,11,21,0,0,0);
-load rbr_data_deployment_4.mat
-% LL, SB, PPN, TP
-% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
-cmab = [460, 14, 20, 3];
-
-% tomales_rbrs.mat has labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
+% start_time = datenum(2019,9,28,0,0,0);
+% end_time = datenum(2019,11,21,0,0,0);
+% % end_time = datenum(2019,10,20,0,0,0);
+% load rbr_data_deployment_4.mat
+% % LL, SB, PPN, TP
+% % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
+% cmab = [460, 14, 20, 3];
 
 % DAYS OF INTEREST
 % Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
@@ -74,14 +76,14 @@ cmab = [460, 14, 20, 3];
 % start_time = datenum(2019,11,7,12,0,0);
 % end_time = datenum(2019,11,8,18,0,0);
 
+%% Control Choices
+
 % ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
 % THIS SCRIPT (I.E. IN META_RUN.M)
-sensor_choice = 4;
-
-%% Binary Choices
-% "1" turns them on, "0" turns them off
+% sensor_choice = 2;
 
 % Mechanical Options
+% "1" turns them on, "0" turns them off
 adjust_pressure = 1; % Default is 1
 variance_preserving = 1; % Default is 1
 use_t_tide = 1; % Default is 1, turn off if very short time window...
@@ -89,19 +91,40 @@ use_windowing = 0; % Default is 0
 use_median_power = 0; % Not fully-functional yet. 
 
 % Visualization Options
+% "1" turns them on, "0" turns them off
 make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0; 
 do_energy_wave_correlations = 1;
 visualize_big_spectra = 1;
-visualize_morn_aft_eve = 1;
-visualize_high_med_low = 0;
+
+% Spectrum Choice: 0 for none
+%                  1 for High/Trans/Low Tide
+%                  2 for Morning/Midday/Evening
+%                  3 for Flooding/Ebbing/Slack
+spectra_choice = 3;
+
+% ALL THREE OF THE NEXT VARIABLES ARE IN HOURS
+ea_spacing = 1; % What is the spacing between each ensemble?
+window_length = 3; % Each ensemble represents how many hours? 
+instance_length = 0.75; % What is the length of each instance in an ensemble?
+
+% 1 /  3 / 0.75 has settled out to be the default
+% 1 /  6 / 3 is useful for capturing seiche stuff
 
 %% Setup
 
+% Cutoffs between types of waves (in seconds)
+max_period_wind = 4;
+max_period_swell = 25;
+max_period_igw = 250;
+
+% How many points do you want to use for the moving average of S? 
+n_smooth = 5;
+
 max_varpreserv_power = 1*10^-4;
 
-fprintf(['Running stuff for ' labels{sensor_choice} ' with %.2f, %.2f, %.2f.\n'],ea_spacing,window_length,instance_length);
+fprintf(['*** RUNNING CODE FOR ' labels{sensor_choice} ' with %.2f, %.2f, %.2f. ***\n'],ea_spacing,window_length,instance_length);
 
 if end_time - start_time < 0.75
     use_t_tide = 0;
@@ -134,21 +157,15 @@ if use_t_tide
     eta = trimmed_depth_signal - d_out;
 else
     eta = trimmed_depth_signal;
-    % Unadjusted!!!
+    % Unadjusted for tide!!!
 end
 
 % Flatten any bottoming-out chunks ...?
-if min(trimmed_depth_signal) <= 0, fprintf('!!! Depth signal bottoms out. Take note! Setting values to 0 !!!\n'), end
-    
+if min(trimmed_depth_signal) <= 0, fprintf('!!! Depth signal bottoms out. Take note! Setting values to 0 !!!\n'), end    
 trimmed_depth_signal(trimmed_depth_signal <= 0.01) = 0;
 
 mab = cmab./100;
 tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal); % in m
-
-% Cutoffs between types of waves (in seconds)
-max_period_wind = 3;
-max_period_swell = 25;
-max_period_igw = 250;
 
 %% Machinery
 
@@ -167,13 +184,17 @@ n_windows = floor((length(eta) - measurements_per_window)/(ea_spacing*60*60*fs))
 
 matrixS = zeros(n_windows,length(big_average_S));
 matrixSfreq = zeros(size(matrixS));
-% Each row in matrix_E is a power spectra for window. 
+% Each row in matrix_S is a power spectra for window. 
 % The earlier time is at the top, the latter time at the bottom. 
 
 window_depths = zeros(1,n_windows);
+window_slope = zeros(1,n_windows);
 window_Hs_wind = zeros(1,n_windows);
 window_Hs_swell = zeros(1,n_windows);
 window_Hs_igw = zeros(1,n_windows);
+window_Hs_seiche = zeros(1,n_windows);
+window_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
+running_S = zeros(size(big_average_S));
 
 high_tide_running_S = zeros(1,length(big_average_S));
 n_high_tide_S = 0;
@@ -189,8 +210,12 @@ n_afternoon_S = 0;
 evening_running_S = zeros(1,length(big_average_S));
 n_evening_S = 0;
 
-window_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
-running_S = zeros(size(big_average_S));
+flooding_running_S = zeros(1,length(big_average_S));
+n_flooding_S = 0;
+ebbing_running_S = zeros(1,length(big_average_S));
+n_ebbing_S = 0;
+slack_running_S = zeros(1,length(big_average_S));
+n_slack_S = 0;
 
 for nn = 0:n_windows-1
     si = nn*ea_spacing*60*60*fs + 1;
@@ -200,6 +225,9 @@ for nn = 0:n_windows-1
     
     ensemble = eta(si:ei);
     ensemble = detrend(ensemble,2); % 2 or 3?
+    
+    [fitcoeff,~,~] = polyfit(datenum(trimmed_times(si:ei)),trimmed_depth_signal(si:ei),1);
+    window_slope(nn+1) = fitcoeff(1);
     
     window_depths(nn+1) = mean(trimmed_depth_signal(si:ei));
     
@@ -238,6 +266,17 @@ for nn = 0:n_windows-1
         n_evening_S = n_evening_S + 1;
     end
     
+    if window_slope(nn+1) > 0.1
+        flooding_running_S = flooding_running_S + S;
+        n_flooding_S = n_flooding_S + 1;
+    elseif window_slope(nn+1) < -0.1
+        ebbing_running_S = ebbing_running_S + S;
+        n_ebbing_S = n_ebbing_S + 1;
+    else
+        slack_running_S = slack_running_S + S;
+        n_slack_S = n_slack_S + 1;
+    end
+    
     matrixS(nn+1,:) = movmean(S,5);
     running_S = running_S + S;
     freq = W./(2*pi);
@@ -252,14 +291,19 @@ for nn = 0:n_windows-1
     [~,ei] = min(abs(freq - 1/max_period_wind));
     m0_swell = trapz(freq(si:ei),S(si:ei));
 
-    % IGW (0.05 to 0.004 Hz)
+    % IGW 
     [~,si] = min(abs(freq - 1/max_period_igw)); 
     [~,ei] = min(abs(freq - 1/max_period_swell));
     m0_igw = trapz(freq(si:ei),S(si:ei));
+    
+    % Seiche
+    [~,ei] = min(abs(freq - 1/max_period_igw));
+    m0_seiche = trapz(freq(2:ei),S(2:ei));
 
     window_Hs_wind(nn+1) = 4*sqrt(m0_wind);
     window_Hs_swell(nn+1) = 4*sqrt(m0_swell);
     window_Hs_igw(nn+1) = 4*sqrt(m0_igw);
+    window_Hs_seiche(nn+1) = 4*sqrt(m0_seiche);
 end
 
 high_tide_running_S = high_tide_running_S./n_high_tide_S;
@@ -268,6 +312,9 @@ low_tide_running_S = low_tide_running_S./n_low_tide_S;
 morning_running_S = morning_running_S./n_morning_S;
 afternoon_running_S = afternoon_running_S./n_afternoon_S;
 evening_running_S = evening_running_S./n_evening_S;
+flooding_running_S = flooding_running_S./n_flooding_S;
+ebbing_running_S = ebbing_running_S./n_ebbing_S;
+slack_running_S = slack_running_S./n_slack_S;
 running_S = running_S./n_windows;
 
 
@@ -299,16 +346,24 @@ m0_wind = trapz(freq(si:end),running_S(si:end));
 [~,ei] = min(abs(freq - 1/max_period_wind));
 m0_swell = trapz(freq(si:ei),running_S(si:ei));
 
-% IGW (0.05 to 0.004 Hz)
+% IGW 
 [~,si] = min(abs(freq - 1/max_period_igw)); 
 [~,ei] = min(abs(freq - 1/max_period_swell));
 m0_igw = trapz(freq(si:ei),running_S(si:ei));
 
+% Seiche
+[~,ei] = min(abs(freq - 1/max_period_igw));
+m0_seiche = trapz(freq(2:ei),running_S(2:ei));
+
 Hs_wind = 4*sqrt(m0_wind);
 Hs_swell = 4*sqrt(m0_swell);
 Hs_igw = 4*sqrt(m0_igw);
+Hs_seiche = 4*sqrt(m0_seiche);
 
-fprintf('Overall Hs wind = %f, Hs swell = %f, Hs IGW = %f\n',Hs_wind,Hs_swell,Hs_igw);
+fprintf('Overall Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs Seiche = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_seiche);
+figure
+pie([m0_wind m0_swell m0_igw m0_seiche].*(10^7),{'Wind','Swell','IGW','Seiche'});
+title('Energy (m^2) Budget Partition');
 
 %% Conditions
 
@@ -385,9 +440,10 @@ if do_energy_wave_correlations
     hold on
     plot(window_times,window_Hs_swell);
     plot(window_times,window_Hs_igw);
+    plot(window_times,window_Hs_seiche);
     yyaxis right
-    plot(trimmed_times,trimmed_depth_signal,'g-');
-    legend('H_s Wind','H_s Swell','H_s IGW','Depth');
+    plot(trimmed_times,trimmed_depth_signal,'g--');
+    legend('H_s Wind','H_s Swell','H_s IGW','H_s Seiche','Depth');
     title([labels{sensor_choice} ' H_s, ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
 end
 
@@ -442,11 +498,13 @@ if make_spectra_plot
         yyaxis right
 
         scatter(datenum(tbb_wind.time),tbb_wind.spd,'.');
+%         scatter(datenum(wind.time),wind.spd,'.');
         ylim([0 20]);
         ylabel('Wind Speed (m/s)');
         yyaxis left
         hold on
         scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
+%         scatter(datenum(wind.time),wind.dir,'+');
         scatter(datenum(swell.time),swell.dir,'go');
         ylabel('Direction (°)');
         ylim([0 360]); % weird outliers sometimes...
@@ -488,18 +546,24 @@ if visualize_big_spectra
         end
         hold on
         
-        if visualize_high_med_low
-            semilogx(freq,high_tide_running_S.*freq,'Color',colors(1,:));
-            semilogx(freq,med_tide_running_S.*freq,'Color',colors(2,:));
-            semilogx(freq,low_tide_running_S.*freq,'Color',colors(3,:));
-            legend('Total Running','High Tide','Med Tide','Low Tide');
-        end
-        
-        if visualize_morn_aft_eve
-            semilogx(freq,morning_running_S.*freq,'r');
-            semilogx(freq,afternoon_running_S.*freq,'g');
-            semilogx(freq,evening_running_S.*freq,'b');
-            legend('Total Running','Morning','Afternoon','Evening');
+        switch spectra_choice
+            case 1
+                semilogx(freq,high_tide_running_S.*freq,'Color',colors(1,:));
+                semilogx(freq,med_tide_running_S.*freq,'Color',colors(2,:));
+                semilogx(freq,low_tide_running_S.*freq,'Color',colors(3,:));
+                legend('Total Running','High Tide','Med Tide','Low Tide');
+            case 2
+                semilogx(freq,morning_running_S.*freq,'r');
+                semilogx(freq,afternoon_running_S.*freq,'g');
+                semilogx(freq,evening_running_S.*freq,'b');
+                legend('Total Running','Morning','Afternoon','Evening');
+            case 3
+                semilogx(freq,flooding_running_S.*freq,'r');
+                semilogx(freq,ebbing_running_S.*freq,'g');
+                semilogx(freq,slack_running_S.*freq,'b');
+                legend('Total Running','Flooding','Ebbing','Slack');
+            otherwise
+                % Nothing! 
         end
         
         ylabel('Variance Per Hz');
@@ -523,7 +587,7 @@ if visualize_big_spectra
     % Or maybe just 0.05 Hz to the end, per Hughes et al 2014
 %     [~,si] = min(abs(freq - 0.05)); % to end
 
-fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
+    fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
     
     fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 
@@ -533,17 +597,21 @@ end
 %% Energy Flux & Dissipation Stuff
 
 % First, need to find energy flux for each frequency bucket. 
-% Energy Flux = Group Celerity * Energy Density
+% Energy Flux = Group Celerity * Energy Density 
+% (really needs to then be multiplied by rho*g*(1/8)...
 
 g = 9.80665;
 
 % All of these are vectors, values for each frequency (really, W) value
 kh = qkhfs(W,mean(trimmed_depth_signal)); % Oy, taking in a lot of time here...
-k = kh./mean(trimmed_depth_signal);
+k = kh./mean(trimmed_depth_signal); % a bit sloppy
 Cp = ((g./k).*tanh(kh)).^0.5;
 Cg = Cp.*(0.5+kh./sinh(2.*kh));
 
 eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
+eval(['running_S_' num2str(sensor_choice) ' = running_S;']);
+% DON'T FORGET... 
+% THIS IS ENERGY FLUX PER FREQUENCY, NOT YET FULLY DIMENSIONED EITHER
 
 %% Tidal Depth Histogram
 
@@ -552,3 +620,7 @@ eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
 % xlabel('Tidal Depth of Window');
 % ylabel('Proportion');
 % title(labels{sensor_choice});
+
+%% Closing
+
+fprintf('\n\n');
