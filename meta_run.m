@@ -6,7 +6,7 @@
 close all
 clear all
 
-n_sensors = 6;
+n_sensors = 4;
 
 for ss = 1:n_sensors
     sensor_choice = ss;
@@ -35,10 +35,10 @@ legend(labels);
 % And last curve is NDBC Buoy
 
 figure
-loglog(freq,running_S_1.*freq);
+semilogx(freq,running_S_1.*freq);
 for ss = 2:n_sensors
     hold on
-    eval(['loglog(freq,running_S_' num2str(ss) '.*freq);']);
+    eval(['semilogx(freq,running_S_' num2str(ss) '.*freq);']);
 end
 xlabel('frequency (Hz)');
 ylabel('Energy Density (m^2 / Hz)');

@@ -1,26 +1,32 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 3 June 2020
+% Last Edited 9 June 2020
 
 %% Sensor Data
 
 % Bring in labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
+
+% For Botany Bay Data
+start_time = datenum(2018,6,20,12,0,0);
+end_time = datenum(2018,7,26,0,0,0);
+cmab = [0.3 0.15]; % RBR 1 & RBR5, which is guessed
+load bb_data_RBR1_RBR5.mat
+rbr_depths_adjusted = rbr_depths; % Because data not corrected. 
     
 % For FIRST Sensor Set
 % start_time = datenum(2019,6,4,12,0,0);
 % end_time = datenum(2019,7,16,0,0,0);
 %        LL  PN  PS  SB  WB  SL   TB
-cmab = [460, 20, 14, 47, 25, 116, 30];
+% cmab = [460, 20, 14, 47, 25, 116, 30];
 
 % For SECOND Sensor Set
-load rbr_data_deployment_2.mat
-start_time = datenum(2019,7,19,0,0,0);
-end_time = datenum(2019,8,29,0,0,0);
-% LL, PS, SL, TB, TP, WB
-% N.B. Wall Beach got mangled on Aug 5?try to go before or after this
-% Tomasini only deployed 8/1
-cmab = [460, 14, 116, 30, 3, 25];
-
-start_time = datenum(2019,8,6,0,0,0);
+% load rbr_data_deployment_2.mat
+% start_time = datenum(2019,7,19,0,0,0);
+% end_time = datenum(2019,8,29,0,0,0);
+% % LL, PS, SL, TB, TP, WB
+% % N.B. Wall Beach got mangled on Aug 5?try to go before or after this
+% % Tomasini only deployed 8/1
+% cmab = [460, 14, 116, 30, 3, 25];
+% start_time = datenum(2019,8,6,0,0,0);
 
 % Random period to examine
 % start_time = datenum(2019,7,26,0,0,0);
@@ -41,19 +47,21 @@ start_time = datenum(2019,8,6,0,0,0);
 % For THIRD Sensor Set
 % load rbr_data_deployment_3.mat
 % start_time = datenum(2019,8,30,0,0,0);
-% end_time = datenum(2019,9,22,0,0,0);
+% end_time = datenum(2019,9,27,0,0,0);
 % % Note big time jump error in LL on Sept 23rd
-% % LL, PPN, SB, SL
-% cmab = [460, 20, 14, 116];
+% % Note Tomasini Point data goes UNTIL 22 NOVEMBER?uses same as 4th deploy
+% % LL, PPN, SB, SL, TP
+% cmab = [460, 20, 14, 116, 3];
+% end_time = datenum(2019,9,22,0,0,0);
 
 % For FOURTH Sensor Set
 % start_time = datenum(2019,9,28,0,0,0);
 % end_time = datenum(2019,11,21,0,0,0);
-% % end_time = datenum(2019,10,20,0,0,0);
 % load rbr_data_deployment_4.mat
 % % LL, SB, PPN, TP
 % % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
 % cmab = [460, 14, 20, 3];
+% end_time = datenum(2019,10,20,0,0,0);
 
 % DAYS OF INTEREST
 % Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
@@ -80,7 +88,7 @@ start_time = datenum(2019,8,6,0,0,0);
 
 % ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
 % THIS SCRIPT (I.E. IN META_RUN.M)
-% sensor_choice = 2;
+sensor_choice = 1;
 
 % Mechanical Options
 % "1" turns them on, "0" turns them off
@@ -122,7 +130,8 @@ max_period_igw = 250;
 % How many points do you want to use for the moving average of S? 
 n_smooth = 5;
 
-max_varpreserv_power = 1*10^-4;
+% max_varpreserv_power = 1*10^-4; % good for TB data
+max_varpreserv_power = 3*10^-3; % good for BB data
 
 fprintf(['*** RUNNING CODE FOR ' labels{sensor_choice} ' with %.2f, %.2f, %.2f. ***\n'],ea_spacing,window_length,instance_length);
 
@@ -244,37 +253,40 @@ for nn = 0:n_windows-1
         S = Sd_to_Ss(ensemble,mab(sensor_choice),W,S);
     end
     
-    if mean(trimmed_depth_signal(si:ei)) > min(trimmed_depth_signal)+(2/3)*tide_range
-        high_tide_running_S = high_tide_running_S + S;
-        n_high_tide_S = n_high_tide_S + 1;
-    elseif mean(trimmed_depth_signal(si:ei)) < min(trimmed_depth_signal)+(1/3)*tide_range
-        low_tide_running_S = low_tide_running_S + S;
-        n_low_tide_S = n_low_tide_S + 1;
-    else
-        med_tide_running_S = med_tide_running_S + S;
-        n_med_tide_S = n_med_tide_S + 1;
-    end
-        
-    if hour(window_times(nn+1)) <= 5
-        morning_running_S = morning_running_S + S;
-        n_morning_S = n_morning_S + 1;
-    elseif hour(window_times(nn+1)) > 5 && hour(window_times(nn+1)) < 18
-        afternoon_running_S = afternoon_running_S + S;
-        n_afternoon_S = n_afternoon_S + 1;
-    else
-        evening_running_S = evening_running_S + S;
-        n_evening_S = n_evening_S + 1;
-    end
-    
-    if window_slope(nn+1) > 0.1
-        flooding_running_S = flooding_running_S + S;
-        n_flooding_S = n_flooding_S + 1;
-    elseif window_slope(nn+1) < -0.1
-        ebbing_running_S = ebbing_running_S + S;
-        n_ebbing_S = n_ebbing_S + 1;
-    else
-        slack_running_S = slack_running_S + S;
-        n_slack_S = n_slack_S + 1;
+    switch spectra_choice
+        case 1
+            if mean(trimmed_depth_signal(si:ei)) > min(trimmed_depth_signal)+(2/3)*tide_range
+                high_tide_running_S = high_tide_running_S + S;
+                n_high_tide_S = n_high_tide_S + 1;
+            elseif mean(trimmed_depth_signal(si:ei)) < min(trimmed_depth_signal)+(1/3)*tide_range
+                low_tide_running_S = low_tide_running_S + S;
+                n_low_tide_S = n_low_tide_S + 1;
+            else
+                med_tide_running_S = med_tide_running_S + S;
+                n_med_tide_S = n_med_tide_S + 1;
+            end
+        case 2   
+            if hour(window_times(nn+1)) <= 5
+                morning_running_S = morning_running_S + S;
+                n_morning_S = n_morning_S + 1;
+            elseif hour(window_times(nn+1)) > 5 && hour(window_times(nn+1)) < 18
+                afternoon_running_S = afternoon_running_S + S;
+                n_afternoon_S = n_afternoon_S + 1;
+            else
+                evening_running_S = evening_running_S + S;
+                n_evening_S = n_evening_S + 1;
+            end
+        case 3
+            if window_slope(nn+1) > 0.1
+                flooding_running_S = flooding_running_S + S;
+                n_flooding_S = n_flooding_S + 1;
+            elseif window_slope(nn+1) < -0.1
+                ebbing_running_S = ebbing_running_S + S;
+                n_ebbing_S = n_ebbing_S + 1;
+            else
+                slack_running_S = slack_running_S + S;
+                n_slack_S = n_slack_S + 1;
+            end
     end
     
     matrixS(nn+1,:) = movmean(S,5);
@@ -306,15 +318,20 @@ for nn = 0:n_windows-1
     window_Hs_seiche(nn+1) = 4*sqrt(m0_seiche);
 end
 
-high_tide_running_S = high_tide_running_S./n_high_tide_S;
-med_tide_running_S = med_tide_running_S./n_med_tide_S;
-low_tide_running_S = low_tide_running_S./n_low_tide_S;
-morning_running_S = morning_running_S./n_morning_S;
-afternoon_running_S = afternoon_running_S./n_afternoon_S;
-evening_running_S = evening_running_S./n_evening_S;
-flooding_running_S = flooding_running_S./n_flooding_S;
-ebbing_running_S = ebbing_running_S./n_ebbing_S;
-slack_running_S = slack_running_S./n_slack_S;
+switch spectra_choice
+    case 1
+        high_tide_running_S = high_tide_running_S./n_high_tide_S;
+        med_tide_running_S = med_tide_running_S./n_med_tide_S;
+        low_tide_running_S = low_tide_running_S./n_low_tide_S;
+    case 2
+        morning_running_S = morning_running_S./n_morning_S;
+        afternoon_running_S = afternoon_running_S./n_afternoon_S;
+        evening_running_S = evening_running_S./n_evening_S;
+    case 3
+        flooding_running_S = flooding_running_S./n_flooding_S;
+        ebbing_running_S = ebbing_running_S./n_ebbing_S;
+        slack_running_S = slack_running_S./n_slack_S;
+end
 running_S = running_S./n_windows;
 
 
@@ -363,7 +380,7 @@ Hs_seiche = 4*sqrt(m0_seiche);
 fprintf('Overall Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs Seiche = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_seiche);
 figure
 pie([m0_wind m0_swell m0_igw m0_seiche].*(10^7),{'Wind','Swell','IGW','Seiche'});
-title('Energy (m^2) Budget Partition');
+title(['Energy (m^2) Budget Partition for ' labels{sensor_choice}]);
 
 %% Conditions
 
