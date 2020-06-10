@@ -6,9 +6,9 @@
 % files = {'20190717_LL_124165_data.txt','20190717_PN_124162_data.txt','20190717_PS_124163_data.txt','20190717_SB_124168_data.txt','20190717_WB_124125_data.txt','20190718_SL_124164_data.txt','20190801_TB_124127_data.txt'};
 % labels = {'Lawsons Landing','Pelican Pt N','Pelican Pt S','Seal Beach','Wall Beach','Sacramento Landing','Tomales Beach'};
 
-prepend = '';
-files = {'124126_20180615_RBR1_data.txt','124125_20180620_RBR5_data.txt'};
-labels = {'RBR 1','RBR 5'};
+prepend = 'bb_RBR_data';
+files = {'124126_20180615_RBR1_data.txt','124070_2018622_RBR2_data.txt','124125_20180620_RBR5_data.txt'};
+labels = {'RBR 1','RBR 2','RBR 5'};
 
 fs = 2; % 1/seconds
 T = 1/fs;
@@ -69,5 +69,5 @@ end
 %     
 % end
 
-save bb_data_RBR1.mat files labels rbr_times rbr_pressures rbr_depths
+save bb_data_1-2-5.mat files labels rbr_times rbr_pressures rbr_depths
 
