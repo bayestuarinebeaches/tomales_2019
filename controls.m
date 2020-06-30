@@ -70,8 +70,8 @@ cmab = [460, 14, 20, 3];
 % end_time = datenum(2019,9,29,12,0,0);
 
 % % Oct 19-Oct 19 - Windy, swell arrives
-start_time = datenum(2019,10,17,0,0,0);
-end_time = datenum(2019,10,19,12,0,0);
+% start_time = datenum(2019,10,17,0,0,0);
+% end_time = datenum(2019,10,19,12,0,0);
 % 
 % % Nov 15-16 - Windy, bigger swell arrives, Lukas' Birthday
 % start_time = datenum(2019,11,15,6,0,0);
@@ -82,8 +82,8 @@ end_time = datenum(2019,10,19,12,0,0);
 % end_time = datenum(2019,11,20,12,0,0);
 
 % Nov 7-8 - 12s consistent swell, very light winds
-start_time = datenum(2019,11,7,12,0,0);
-end_time = datenum(2019,11,8,18,0,0);
+% start_time = datenum(2019,11,7,12,0,0);
+% end_time = datenum(2019,11,8,18,0,0);
 
 % N wind on Ebb tides
 % start_time = datenum(2019,10,16,18,0,0);
@@ -105,7 +105,7 @@ end_time = datenum(2019,11,8,18,0,0);
 
 % ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
 % THIS SCRIPT (I.E. IN META_RUN.M)
-sensor_choice = 2;
+sensor_choice = 3;
 
 % *** Mechanical Options ***
 % "1" turns them on, "0" turns them off
@@ -114,6 +114,7 @@ variance_preserving = 1; % Default is 1
 use_t_tide = 1; % Default is 1, turn off if very short time window...
 use_windowing = 0; % Default is 0
 use_median_power = 0; % Not fully-functional yet. 
+low_pass_filter = 0; % Default is 0
 
 % *** Visualization Options ***
 % "1" turns them on, "0" turns them off

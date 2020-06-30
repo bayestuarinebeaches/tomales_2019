@@ -14,6 +14,9 @@ max_period_igw = 250; % Maryam used 300s, we use 250
 % How many points do you want to use for the moving average of S? 
 n_smooth = 5;
 
+% What frequency to dictate low-pass filtering? 
+low_pass_freq = 0.7; % Hz
+
 max_varpreserv_power = 1*10^-4; % good for TB data
 % max_varpreserv_power = 3*10^-3; % good for BB data
 
@@ -44,8 +47,10 @@ end
 trimmed_depth_signal = depth_signal(start_index:end_index); 
 trimmed_times = rbr_times{sensor_choice}(start_index:end_index); % Comes as datetimes
 
-% Low-Pass Filtering ? 
-trimmed_depth_signal = lowpass(trimmed_depth_signal,0.7,fs);
+% Low-Pass Filtering
+if low_pass_filter
+    trimmed_depth_signal = lowpass(trimmed_depth_signal,low_pass_freq,fs);
+end
 
 % Remove the tidal signal using t_tide (https://www.eoas.ubc.ca/~rich/)
 if use_t_tide
