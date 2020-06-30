@@ -1,138 +1,21 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 9 June 2020
+% Last Edited 30 June 2020
 
-%% Sensor Data
-
-% Bring in labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
-
-% For Botany Bay Data
-% start_time = datenum(2018,6,22,12,0,0);
-% end_time = datenum(2018,7,24,0,0,0);
-% cmab = [0.3 0.15]; % RBR 1 & RBR5, which is guessed
-% load bb_data_1-2-5.mat
-% rbr_depths_adjusted = rbr_depths; % Because data not corrected. 
-    
-% For FIRST Sensor Set
-% start_time = datenum(2019,6,4,12,0,0);
-% end_time = datenum(2019,7,16,0,0,0);
-%        LL  PN  PS  SB  WB  SL   TB
-% cmab = [460, 20, 14, 47, 25, 116, 30];
-
-% For SECOND Sensor Set
-load rbr_data_deployment_2.mat
-start_time = datenum(2019,7,19,0,0,0);
-end_time = datenum(2019,8,29,0,0,0);
-% LL, PS, SL, TB, TP, WB
-% N.B. Wall Beach got mangled on Aug 5?try to go before or after this
-% Tomasini only deployed 8/1
-cmab = [460, 14, 116, 30, 3, 25];
-start_time = datenum(2019,8,6,0,0,0);
-
-% Random period to examine
-% start_time = datenum(2019,7,26,0,0,0);
-% end_time = datenum(2019,7,28,0,0,0);
-
-% Good sea breeze pattern days... 
-% start_time = datenum(2019,8,17,0,0,0);
-% end_time = datenum(2019,8,24,0,0,0);
-
-% Visible Seiche (LL)...?
-% start_time = datenum(2019,8,9,0,0,0);
-% end_time = datenum(2019,8,10,0,0,0);
-
-% Peak in Seiching noticeable again (LL?)
-% start_time = datenum(2019,7,24,6,0,0);
-% end_time = datenum(2019,7,25,18,0,0);
-
-% For THIRD Sensor Set
-% load rbr_data_deployment_3.mat
-% start_time = datenum(2019,8,30,0,0,0);
-% end_time = datenum(2019,9,27,0,0,0);
-% % Note big time jump error in LL on Sept 23rd
-% % Note Tomasini Point data goes UNTIL 22 NOVEMBER?uses same as 4th deploy
-% % LL, PPN, SB, SL, TP
-% cmab = [460, 20, 14, 116, 3];
-% end_time = datenum(2019,9,22,0,0,0);
-
-% For FOURTH Sensor Set
-% start_time = datenum(2019,9,28,0,0,0);
-% end_time = datenum(2019,11,21,0,0,0);
-% load rbr_data_deployment_4.mat
-% % LL, SB, PPN, TP
-% % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
-% cmab = [460, 14, 20, 3];
-% end_time = datenum(2019,10,20,0,0,0);
-
-% DAYS OF INTEREST
-% Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
-% start_time = datenum(2019,9,28,12,0,0);
-% end_time = datenum(2019,9,29,12,0,0);
-
-% % Oct 19-Oct 19 - Windy, swell arrives, some
-% start_time = datenum(2019,10,17,0,0,0);
-% end_time = datenum(2019,10,19,12,0,0);
-% 
-% % Nov 15-16 - Windy, bigger swell arrives, Lukas' Birthday
-% start_time = datenum(2019,11,15,6,0,0);
-% end_time = datenum(2019,11,16,18,0,0);
-
-% % Nov 20-21 - bigger waves, from local wind? 
-% start_time = datenum(2019,11,19,0,0,0);
-% end_time = datenum(2019,11,20,12,0,0);
-
-% Nov 7-8 - 12s consistent swell, very light winds
-% start_time = datenum(2019,11,7,12,0,0);
-% end_time = datenum(2019,11,8,18,0,0);
-
-%% Control Choices
-
-% ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
-% THIS SCRIPT (I.E. IN META_RUN.M)
-sensor_choice = 2;
-
-% *** Mechanical Options ***
-% "1" turns them on, "0" turns them off
-adjust_pressure = 1; % Default is 1
-variance_preserving = 1; % Default is 1
-use_t_tide = 1; % Default is 1, turn off if very short time window...
-use_windowing = 0; % Default is 0
-use_median_power = 0; % Not fully-functional yet. 
-
-% *** Visualization Options ***
-% "1" turns them on, "0" turns them off
-make_spectra_plot = 1;
-visualize_conditions = 0;
-use_residual_spectra = 0; 
-do_energy_wave_correlations = 1;
-visualize_big_spectra = 1;
-
-% Spectrum Choice: 0 for none
-%                  1 for High/Trans/Low Tide
-%                  2 for Morning/Midday/Evening
-%                  3 for Flooding/Ebbing/Slack
-spectra_choice = 1;
-
-% *** Timing Controls ***
-% ALL THREE OF THE NEXT VARIABLES ARE IN HOURS
-ea_spacing = 1; % What is the spacing between each ensemble?
-window_length = 3; % Each ensemble represents how many hours? 
-instance_length = 0.75; % What is the length of each instance in an ensemble?
-
-% 1 /  3 / 0.75 has settled out to be the default
-% 1 /  6 / 3 is useful for capturing seiche stuff
+%% Load Control Parameters & Dates
+run controls.m
 
 %% Setup
 
 % Cutoffs between types of waves (in seconds)
 max_period_wind = 4;
-max_period_swell = 25; % Maryam used 20s
-max_period_igw = 250; % Maryam used 300s
+max_period_swell = 25; % Maryam used 20s, we use 25
+max_period_igw = 250; % Maryam used 300s, we use 250
 
 % How many points do you want to use for the moving average of S? 
 n_smooth = 5;
 
-% max_varpreserv_power = 1*10^-4; % good for TB data
-max_varpreserv_power = 3*10^-3; % good for BB data
+max_varpreserv_power = 1*10^-4; % good for TB data
+% max_varpreserv_power = 3*10^-3; % good for BB data
 
 fprintf(['*** RUNNING CODE FOR ' labels{sensor_choice} ' with %.2f, %.2f, %.2f. ***\n'],ea_spacing,window_length,instance_length);
 
@@ -160,6 +43,9 @@ if isempty(start_index) || isempty(end_index)
 end
 trimmed_depth_signal = depth_signal(start_index:end_index); 
 trimmed_times = rbr_times{sensor_choice}(start_index:end_index); % Comes as datetimes
+
+% Low-Pass Filtering ? 
+trimmed_depth_signal = lowpass(trimmed_depth_signal,0.7,fs);
 
 % Remove the tidal signal using t_tide (https://www.eoas.ubc.ca/~rich/)
 if use_t_tide
@@ -394,6 +280,11 @@ figure
 pie([m0_wind m0_swell m0_igw m0_seiche].*(10^7),{'Wind','Swell','IGW','Seiche'});
 title(['Energy (m^2) Budget Partition for ' labels{sensor_choice}]);
 
+figure
+bar(categorical({'Wind','Swell','IGW','Seiche'}),[m0_wind,m0_swell,m0_igw,m0_seiche]);
+title(['Energy (m^2) Values for ' labels{sensor_choice}]);
+ylim([0 4*10^-5]);
+
 %% Conditions
 
 % get_conditions
@@ -419,7 +310,7 @@ load buoy_spectra.mat
 
 %% Correlations
 
-if do_energy_wave_correlations
+if do_energy_over_time
 
     % Interpolate conditions onto energy times
     % Note, these don't account for direction of wind or swell. 
