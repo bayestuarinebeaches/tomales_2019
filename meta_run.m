@@ -6,7 +6,9 @@
 close all
 clear all
 
-n_sensors = 4;
+run controls.m
+
+n_sensors = length(cmab);
 
 for ss = 1:n_sensors
     sensor_choice = ss;
@@ -21,24 +23,24 @@ Cg_buoy = (g/(4*pi)).*(1./buoy_spectra.freq); % Using deep-water assumption
 
 buoy_energy_flux = mean_buoy_spectra.*Cg_buoy;
 
-figure
-loglog(freq,energy_flux_1);
-for ss = 2:n_sensors
-    hold on
-    eval(['loglog(freq,energy_flux_' num2str(ss) ');']);
-end
-loglog(buoy_spectra.freq,buoy_energy_flux);
-xlabel('frequency (Hz)');
-ylabel('Energy Flux (m^3/s)');
-title(['Energy Flux from ' datestr(start_time) ' to ' datestr(end_time) '']);
-legend(labels);
-% And last curve is NDBC Buoy
+% figure
+% loglog(freq,energy_flux_1);
+% for ss = 2:n_sensors
+%     hold on
+%     eval(['loglog(freq,energy_flux_' num2str(ss) ');']);
+% end
+% loglog(buoy_spectra.freq,buoy_energy_flux);
+% xlabel('frequency (Hz)');
+% ylabel('Energy Flux (m^3/s)');
+% title(['Energy Flux from ' datestr(start_time) ' to ' datestr(end_time) '']);
+% legend(labels);
+% % And last curve is NDBC Buoy
 
 figure
-semilogx(freq,running_S_1.*freq);
+semilogx(freq(n_leakage_ignore:end),running_S_1(n_leakage_ignore:end).*freq(n_leakage_ignore:end);
 for ss = 2:n_sensors
     hold on
-    eval(['semilogx(freq,running_S_' num2str(ss) '.*freq);']);
+    eval(['semilogx(freq,running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
 end
 xlabel('frequency (Hz)');
 ylabel('Energy Density (m^2 / Hz)');
