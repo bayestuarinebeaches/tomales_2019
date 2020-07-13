@@ -3,21 +3,26 @@
 % Bring in labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
 
 % For Botany Bay Data
-% start_time = datenum(2018,6,22,12,0,0);
+% start = [2018,6,22,12,0,0];
+% start_time = datenum(start);
 % end_time = datenum(2018,7,24,0,0,0);
 % cmab = [0.3 0.15 0.15]; % RBR 1, 2, 5. RBR2's is guessed
 % load bb_data_1-2-5.mat
 % rbr_depths_adjusted = rbr_depths; % Because data not corrected. 
+% 
+% start_time = datenum(2018,7,13,0,0,0);
+% end_time = datenum(2018,7,16,0,0,0);
     
 % For FIRST Sensor Set
-% start_time = datenum(2019,6,4,12,0,0);
-% end_time = datenum(2019,7,16,0,0,0);
-%        LL  PN  PS  SB  WB  SL   TB
-% cmab = [460, 20, 14, 47, 25, 116, 30];
+start_time = datenum(2019,6,4,12,0,0);
+end_time = datenum(2019,7,16,0,0,0);
+       LL  PN  PS  SB  WB  SL   TB
+cmab = [460, 20, 14, 47, 25, 116, 30];
 
 % For SECOND Sensor Set
 % load rbr_data_deployment_2.mat
-% start_time = datenum(2019,7,19,0,0,0);
+% start = [2019,7,19,0,0,0];
+% start_time = datenum(start);
 % end_time = datenum(2019,8,29,0,0,0);
 % % LL, PS, SL, TB, TP, WB
 % % N.B. Wall Beach got mangled on Aug 5?try to go before or after this
@@ -42,23 +47,25 @@
 % end_time = datenum(2019,7,25,18,0,0);
 
 % For THIRD Sensor Set
-% load rbr_data_deployment_3.mat
-% start_time = datenum(2019,8,30,0,0,0);
-% end_time = datenum(2019,9,27,0,0,0);
-% % Note big time jump error in LL on Sept 23rd
-% % Note Tomasini Point data goes UNTIL 22 NOVEMBER?uses same as 4th deploy
-% % LL, PPN, SB, SL, TP
-% cmab = [460, 20, 14, 116, 3];
+load rbr_data_deployment_3.mat
+start = [2019,8,30,0,0,0];
+start_time = datenum(start);
+end_time = datenum(2019,9,27,0,0,0);
+% Note big time jump error in LL on Sept 23rd
+% Note Tomasini Point data goes UNTIL 22 NOVEMBER? uses same data as 4th deploy
+% LL, PPN, SB, SL, TP
+cmab = [460, 20, 14, 116, 3];
 % end_time = datenum(2019,9,22,0,0,0);
 
 % For FOURTH Sensor Set
-start_time = datenum(2019,9,28,0,0,0);
-end_time = datenum(2019,11,21,0,0,0);
-load rbr_data_deployment_4.mat
-% LL, SB, PPN, TP
-% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
-cmab = [460, 14, 20, 3];
-% end_time = datenum(2019,10,20,0,0,0);
+% start = [2019,9,28,0,0,0];
+% start_time = datenum(start);
+% end_time = datenum(2019,11,21,0,0,0);
+% load rbr_data_deployment_4.mat
+% % LL, SB, PPN, TP
+% % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
+% cmab = [460, 14, 20, 3];
+% % end_time = datenum(2019,10,20,0,0,0);
 
 
 % start_time = datenum(2019,10,17,0,0,0);
@@ -101,40 +108,67 @@ cmab = [460, 14, 20, 3];
 % start_time = datenum(2019,10,1,0,0,0);
 % end_time = datenum(2019,10,3,12,0,0);
 
-%% Control Choices
+%% Sensor Choice
 
-% ONLY USE THE NEXT LINE IF YOU ARE NOT MODIFYING SENSOR_CHOICE OUTSIDE
-% THIS SCRIPT (I.E. IN META_RUN.M)
-sensor_choice = 3;
+% This gets overwritten if using META_RUN.M
 
-% *** Mechanical Options ***
+sensor_choice = 5;
+
+%% Mechanical Options
 % "1" turns them on, "0" turns them off
 adjust_pressure = 1; % Default is 1
 variance_preserving = 1; % Default is 1
 use_t_tide = 1; % Default is 1, turn off if very short time window...
 use_windowing = 0; % Default is 0
-use_median_power = 0; % Not fully-functional yet. 
+use_median_power = 0; % Not functional yet (keep at 0).
 low_pass_filter = 0; % Default is 0
 
-% *** Visualization Options ***
+%% Visualization Options
 % "1" turns them on, "0" turns them off
 make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0; 
 do_energy_over_time = 1;
 visualize_big_spectra = 1;
+include_seiche = 0;
 
 % Spectrum Choice: 0 for none
 %                  1 for High/Trans/Low Tide
 %                  2 for Morning/Midday/Evening
 %                  3 for Flooding/Ebbing/Slack
-spectra_choice = 3;
+spectra_choice = 0;
 
-% *** Timing Controls ***
+%% Timing Controls
 % ALL THREE OF THE NEXT VARIABLES ARE IN HOURS
 ea_spacing = 1; % What is the spacing between each ensemble?
 window_length = 3; % Each ensemble represents how many hours? 
-instance_length = 0.75; % What is the length of each instance in an ensemble?
+instance_length = 0.6; % What is the length of each instance in an ensemble?
 
 % 1 /  3 / 0.75 has settled out to be the default
 % 1 /  6 / 3 is useful for capturing seiche stuff
+
+% 24 / 24 / 0.75 ???
+
+%% Liftoff Announcements
+
+fprintf(['*** RUNNING CODE FOR ' labels{sensor_choice} ' with %.2f, %.2f, %.2f. ***\n'],ea_spacing,window_length,instance_length);
+if adjust_pressure
+    fprintf('Accounting for pressure attenuation. ');
+else
+    fprintf('No pressure adjustment. ');
+end
+if use_t_tide
+    fprintf('Using t_tide. ');
+else
+    fprintf('Dumb de-tiding. ');
+end
+if use_windowing
+    fprintf('Windowing. ');
+else
+    fprintf('No windowing. ');
+end
+if low_pass_filter
+    fprintf('Low-pass filtering. ');
+end
+fprintf('\n');
+

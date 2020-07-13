@@ -27,7 +27,7 @@ T = 1/fs;
 rbr_times = {};
 rbr_pressure = {};
 rbr_depths_adjusted = {};
-for ii = 1:length(files)
+for ii = 1:1
 
     fid = fopen(strcat(prepend,files{ii}),'rt');
     tmp = textscan(fid,'%d-%d-%d %d:%d:%f,%f,%f,%f','Headerlines',1);
