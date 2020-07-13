@@ -9,18 +9,24 @@ run controls.m
 % Cutoffs between types of waves (in seconds)
 max_period_wind = 4;
 max_period_swell = 25; % Maryam used 20s, we use 25
-max_period_igw = 250; % Maryam used 300s, we use 250
+max_period_igw = 300; % Maryam used 300s, we use 250
 
 % How many points do you want to use for the moving average of S? 
 n_smooth = 5;
 
+% How many low-frequency bins will we ignore?
+% Minimum needs to be 1 to avoid weird plotting of 0/inf
+n_leakage_ignore = 3;
+
+% Then we step it up one for indexing...
+n_leakage_ignore = n_leakage_ignore + 1;
+
 % What frequency to dictate low-pass filtering? 
 low_pass_freq = 0.7; % Hz
+low_pass_freq = 0.08; % Trying to filter swell to evaluate tidal height in BB
 
 max_varpreserv_power = 1*10^-4; % good for TB data
 % max_varpreserv_power = 3*10^-3; % good for BB data
-
-fprintf(['*** RUNNING CODE FOR ' labels{sensor_choice} ' with %.2f, %.2f, %.2f. ***\n'],ea_spacing,window_length,instance_length);
 
 if end_time - start_time < 0.75
     use_t_tide = 0;
@@ -55,6 +61,9 @@ end
 % Remove the tidal signal using t_tide (https://www.eoas.ubc.ca/~rich/)
 if use_t_tide
     [~,d_out] = t_tide(trimmed_depth_signal,T/3600,'output','none');
+%     [~,d_out] = t_tide(trimmed_depth_signal,'start time',start,'latitude',38.17,'output','none');
+    % Latitude given is for Tomales Point, but the above doesn't seem to
+    % work. 
     eta = trimmed_depth_signal - d_out;
 else
     eta = trimmed_depth_signal;
@@ -66,7 +75,7 @@ if min(trimmed_depth_signal) <= 0, fprintf('!!! Depth signal bottoms out. Take n
 trimmed_depth_signal(trimmed_depth_signal <= 0.01) = 0;
 
 mab = cmab./100;
-tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal); % in m
+max_tide_range = max(trimmed_depth_signal) - min(trimmed_depth_signal); % in m
 
 %% Machinery
 
@@ -154,10 +163,10 @@ for nn = 0:n_windows-1
     
     switch spectra_choice
         case 1
-            if mean(trimmed_depth_signal(si:ei)) > min(trimmed_depth_signal)+(2/3)*tide_range
+            if mean(trimmed_depth_signal(si:ei)) > min(trimmed_depth_signal)+(2/3)*max_tide_range
                 high_tide_running_S = high_tide_running_S + S;
                 n_high_tide_S = n_high_tide_S + 1;
-            elseif mean(trimmed_depth_signal(si:ei)) < min(trimmed_depth_signal)+(1/3)*tide_range
+            elseif mean(trimmed_depth_signal(si:ei)) < min(trimmed_depth_signal)+(1/3)*max_tide_range
                 low_tide_running_S = low_tide_running_S + S;
                 n_low_tide_S = n_low_tide_S + 1;
             else
@@ -281,12 +290,39 @@ Hs_igw = 4*sqrt(m0_igw);
 Hs_seiche = 4*sqrt(m0_seiche);
 
 fprintf('Overall Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs Seiche = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_seiche);
-figure
-pie([m0_wind m0_swell m0_igw m0_seiche].*(10^7),{'Wind','Swell','IGW','Seiche'});
-title(['Energy (m^2) Budget Partition for ' labels{sensor_choice}]);
+% Pie Chart Shit
+% figure
+% if include_seiche
+%     pie([m0_wind m0_swell m0_igw m0_seiche].*(10^7),{'Wind','Swell','IGW','Seiche'});
+% else
+%     pie([m0_wind m0_swell m0_igw].*(10^7),{'Wind','Swell','IGW'});
+% end
+% title(['Energy (m^2) Budget Partition for ' labels{sensor_choice}]);
 
+% Bar Chart Shit
 figure
-bar(categorical({'Wind','Swell','IGW','Seiche'}),[m0_wind,m0_swell,m0_igw,m0_seiche]);
+if include_seiche
+    percent_wind = m0_wind/(m0_wind+m0_swell+m0_igw+m0_seiche);
+    percent_swell = m0_swell/(m0_wind+m0_swell+m0_igw+m0_seiche);
+    percent_igw = m0_igw/(m0_wind+m0_swell+m0_igw+m0_seiche);
+    percent_seiche = m0_seiche/(m0_wind+m0_swell+m0_igw+m0_seiche);
+    bar_labels = categorical({'Wind','Swell','IGW','Seiche'});
+    bar_labels = reordercats(bar_labels,{'Wind','Swell','IGW','Seiche'});
+    b = bar(bar_labels,[m0_wind,m0_swell,m0_igw,m0_seiche]);
+    xtips = b.XEndPoints;
+    ytips = b.YEndPoints;
+    text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2),num2str(percent_seiche,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
+else
+    percent_wind = m0_wind/(m0_wind+m0_swell+m0_igw);
+    percent_swell = m0_swell/(m0_wind+m0_swell+m0_igw);
+    percent_igw = m0_igw/(m0_wind+m0_swell+m0_igw);
+    bar_labels = categorical({'Wind','Swell','IGW'});
+    bar_labels = reordercats(bar_labels,{'Wind','Swell','IGW'});
+    b = bar(categorical({'Wind','Swell','IGW'}),[m0_wind,m0_swell,m0_igw]);
+    xtips = b.XEndPoints;
+    ytips = b.YEndPoints;
+    text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
+end
 title(['Energy (m^2) Values for ' labels{sensor_choice}]);
 ylim([0 4*10^-5]);
 
@@ -341,17 +377,59 @@ if do_energy_over_time
 
 %     [acf,lags,~] = autocorr(igw_energy);
 %     plot(lags.*ea_spacing,acf);
-
     figure
+    sgtitle([labels{sensor_choice} ' Energy (m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
+    if visualize_conditions
+        ff(1) = subplot(4,2,[1,2,3,4]);
+    end
+
     plot(window_times,window_m0_wind);
     hold on
     plot(window_times,window_m0_swell);
     plot(window_times,window_m0_igw);
-    plot(window_times,window_m0_seiche);
+    if include_seiche
+        plot(window_times,window_m0_seiche);
+    end
     yyaxis right
     plot(trimmed_times,trimmed_depth_signal,'g--');
-    legend('Wind','Swell','IGW','Seiche','Depth Signal');
-    title([labels{sensor_choice} ' Energy (m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
+    if include_seiche
+        legend('Wind','Swell','IGW','Seiche','Depth Signal');
+    else
+        legend('Wind','Swell','IGW','Depth Signal');
+    end
+    
+    
+    if visualize_conditions
+        ff(2) = subplot(4,2,[5,6]);
+        yyaxis right
+
+        scatter(tbb_wind.time,tbb_wind.spd,'.');
+%         scatter(datenum(wind.time),wind.spd,'.');
+        ylim([0 20]);
+        ylabel('Wind Speed (m/s)');
+        yyaxis left
+        hold on
+        scatter(tbb_wind.time,tbb_wind.dir,'+');
+%         scatter(datenum(wind.time),wind.dir,'+');
+        scatter(swell.time,swell.dir,'go');
+        ylabel('Direction (°)');
+        ylim([0 360]); % weird outliers sometimes...
+
+        ff(3) = subplot(4,2,[7,8]);
+        yyaxis left
+        plot(swell.time,swell.hgt,'+');
+        ylabel('H_s (m)');
+        hold on
+%         plot(datenum(sni.time),sni.value.*5,'g-');
+        plot(trimmed_times,trimmed_depth_signal,'k-');
+        yyaxis right
+        scatter(swell.time,swell.per,'.');
+        ylabel('Period (s)');
+        ylim([0 20]);
+        
+        linkaxes(ff,'x');
+        xlim([min(trimmed_times) max(trimmed_times)]);
+    end
 end
 
 %% Plotting
@@ -372,12 +450,12 @@ if make_spectra_plot
         % Impose high & low values to fix scale bar. 
         matrixSfreq(2,end) = max_varpreserv_power;
         matrixSfreq(2,end-1) = 0;
-        contourf(datenum(window_times(:)),logfreq(2:end),matrixSfreq(2:end,:),15,'LineColor','none');
+        contourf(datenum(window_times(:)),logfreq(n_leakage_ignore:end),matrixSfreq(n_leakage_ignore:end,:),15,'LineColor','none');
     else
         % Impose high & low values to fix scale bar. 
         logSt(2,end) = -1;
         logSt(2,end-1) = -9;
-        contourf(datenum(window_times(:)),logfreq(2:end),logSt(2:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
+        contourf(datenum(window_times(:)),logfreq(n_leakage_ignore:end),logSt(n_leakage_ignore:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
     end
     c = colorbar('east');
     if use_residual_spectra
@@ -447,17 +525,18 @@ if visualize_big_spectra
     figure
     if variance_preserving
         if use_median_power
-            semilogx(freq,median(matrixS).*freq,'k');
+            medianS = median(matrixS);
+            semilogx(freq(n_leakage_ignore:end),medianS(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'k');
         else
-            semilogx(freq,running_S.*freq,'k');
+            semilogx(freq(n_leakage_ignore:end),running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'k');
         end
         hold on
         
         switch spectra_choice
             case 1
-                semilogx(freq,high_tide_running_S.*freq,'Color',colors(1,:));
-                semilogx(freq,med_tide_running_S.*freq,'Color',colors(2,:));
-                semilogx(freq,low_tide_running_S.*freq,'Color',colors(3,:));
+                semilogx(freq(4:end),high_tide_running_S(4:end).*freq(4:end),'Color',colors(1,:));
+                semilogx(freq(4:end),med_tide_running_S(4:end).*freq(4:end),'Color',colors(2,:));
+                semilogx(freq(4:end),low_tide_running_S.*freq,'Color',colors(3,:));
                 legend('Total Running','High Tide','Med Tide','Low Tide');
             case 2
                 semilogx(freq,morning_running_S.*freq,'r');
@@ -503,17 +582,7 @@ end
 
 %% Energy Flux & Dissipation Stuff
 
-% First, need to find energy flux for each frequency bucket. 
-% Energy Flux = Group Celerity * Energy Density 
-% (really needs to then be multiplied by rho*g*(1/8)...
-
-g = 9.80665;
-
-% All of these are vectors, values for each frequency (really, W) value
-kh = qkhfs(W,mean(trimmed_depth_signal)); % Oy, taking in a lot of time here...
-k = kh./mean(trimmed_depth_signal); % a bit sloppy
-Cp = ((g./k).*tanh(kh)).^0.5;
-Cg = Cp.*(0.5+kh./sinh(2.*kh));
+run energy_flux.m
 
 eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
 eval(['running_S_' num2str(sensor_choice) ' = running_S;']);
