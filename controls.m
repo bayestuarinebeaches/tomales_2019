@@ -1,7 +1,7 @@
 %% Sensor Choice
 
 % Remove this if using META_RUN.M
-% sensor_choice = 2;
+sensor_choice = 2;
 
 %% Mechanical Options
 % "1" turns them on, "0" turns them off

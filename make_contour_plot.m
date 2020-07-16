@@ -536,10 +536,37 @@ if make_spectra_plot
         
         linkaxes(ff,'x');
         
-%         figure
-%         for ii = 1:length(window_times)
-%             % stuff
-%         end
+        wave_period_mapped = interp1(datenum(swell.time),swell.per,datenum(window_times'));
+        wave_height_mapped = interp1(datenum(swell.time),swell.hgt,datenum(window_times'));
+        wave_direction_mapped = interp1(datenum(swell.time),double(swell.dir),datenum(window_times')).*(2*pi/360);
+        
+        figure
+        sgtitle([labels{sensor_choice} ' Conditions from ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '. ']);
+        gg(1) = subplot(1,2,1);
+        polarscatter(wave_direction_mapped,wave_height_mapped,30,window_m0_igw,'filled');
+        hold on
+        polarscatter(0,0,30,0);
+        polarscatter(0,0,30,3*10^-5);
+        colormap cool
+        pax = gca;
+        pax.ThetaDir = 'clockwise';
+        pax.ThetaZeroLocation = 'top';
+        c = colorbar;
+        c.Label.String = 'm_0 from IGW';
+        title(['Dominant Wave Direction (theta) and Offshore Wave Height (radius) on m_0 of IGW']);
+        
+        gg(2) = subplot(1,2,2);
+        polarscatter(wave_direction_mapped,wave_period_mapped,30,window_m0_igw,'filled');
+        hold on
+        polarscatter(0,0,30,0);
+        polarscatter(0,0,30,3*10^-5);
+        colormap cool
+        pax = gca;
+        pax.ThetaDir = 'clockwise';
+        pax.ThetaZeroLocation = 'top';
+        c = colorbar;
+        c.Label.String = 'm_0 from IGW';
+        title(['Dominant Wave Direction (theta) and Offshore Wave Period (radius) on m_0 of IGW']);
     end
 
 end
