@@ -1,8 +1,7 @@
 %% Sensor Choice
 
 % Remove this if using META_RUN.M
-
-sensor_choice = 2;
+% sensor_choice = 2;
 
 %% Mechanical Options
 % "1" turns them on, "0" turns them off
@@ -35,7 +34,7 @@ window_length = 18; %24; % Each ensemble represents how many hours?
 instance_length = 6;%0.75; %3; % What is the length of each instance in an ensemble?
 
 % 1 /  3 / 0.75 has settled out to be the default
-% 1 /  6 / 3 is useful for capturing seiche stuff
+% 6 / 18 / 6 is useful for resolving seiche hump w/o tidal consideration
 
 % 24 / 24 / 0.75 ???
 

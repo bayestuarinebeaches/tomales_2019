@@ -1,11 +1,12 @@
 % Lukas WinklerPrins
 % lukas_wp@berkeley.edu
 
-% Last edited 30 April 2020
+% Last edited 17 July 2020
 
 close all
 clear all
 
+run date_controls.m
 run controls.m
 
 n_sensors = length(cmab);

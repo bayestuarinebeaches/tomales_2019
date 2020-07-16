@@ -10,8 +10,6 @@ function Ss = Sd_to_Ss(ts,mab,W,Sd,varargin)
 % lukas_wp@berkeley.edu
 % 29 April 2020
 
-% NEED TO FINISH HIGH-FREQUENCY CUTOFF STUFF
-
     if nargin == 5
         N = varargin{1};
     else

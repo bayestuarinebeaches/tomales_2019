@@ -1,5 +1,5 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 30 June 2020
+% Last Edited 17 July 2020
 
 %% Load Control Parameters & Dates
 run date_controls.m
@@ -535,6 +535,11 @@ if make_spectra_plot
         xlim([start_time end_time]);
         
         linkaxes(ff,'x');
+        
+%         figure
+%         for ii = 1:length(window_times)
+%             % stuff
+%         end
     end
 
 end
