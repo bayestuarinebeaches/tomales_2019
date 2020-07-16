@@ -35,4 +35,4 @@ wave_index = 271;
 % 169 for 16s wave
 
 
-fprintf('Waves of %.1f s period at %d m water depth, %.1f m wave height will propagate %.1f m. \n',1/freq(wave_index),h,H,E/linear_epsilon_f(wave_index));
+% fprintf('Waves of %.1f s period at %d m water depth, %.1f m wave height will propagate %.1f m. \n',1/freq(wave_index),h,H,E/linear_epsilon_f(wave_index));

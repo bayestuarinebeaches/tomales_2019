@@ -2,7 +2,31 @@
 % Last Edited 30 June 2020
 
 %% Load Control Parameters & Dates
+run date_controls.m
 run controls.m
+
+%% Liftoff Announcements
+
+fprintf(['*** RUNNING CODE FOR ' labels{sensor_choice} ' with %.2f, %.2f, %.2f. ***\n'],ea_spacing,window_length,instance_length);
+if adjust_pressure
+    fprintf('Accounting for pressure attenuation. ');
+else
+    fprintf('No pressure adjustment. ');
+end
+if use_t_tide
+    fprintf('Using t_tide. ');
+else
+    fprintf('Dumb de-tiding. ');
+end
+if use_windowing
+    fprintf('Windowing. ');
+else
+    fprintf('No windowing. ');
+end
+if low_pass_filter
+    fprintf('Low-pass filtering. ');
+end
+fprintf('\n');
 
 %% Setup
 
@@ -16,14 +40,14 @@ n_smooth = 5;
 
 % How many low-frequency bins will we ignore?
 % Minimum needs to be 1 to avoid weird plotting of 0/inf
+% Usually I'll use 3
 n_leakage_ignore = 3;
-
 % Then we step it up one for indexing...
 n_leakage_ignore = n_leakage_ignore + 1;
 
 % What frequency to dictate low-pass filtering? 
 low_pass_freq = 0.7; % Hz
-low_pass_freq = 0.08; % Trying to filter swell to evaluate tidal height in BB
+% low_pass_freq = 0.08; % Trying to filter swell to evaluate tidal height in BB
 
 max_varpreserv_power = 1*10^-4; % good for TB data
 % max_varpreserv_power = 3*10^-3; % good for BB data
@@ -378,20 +402,20 @@ if do_energy_over_time
 %     [acf,lags,~] = autocorr(igw_energy);
 %     plot(lags.*ea_spacing,acf);
     figure
-    sgtitle([labels{sensor_choice} ' Energy (m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
+    sgtitle([labels{sensor_choice} ' H_s (via m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
     if visualize_conditions
         ff(1) = subplot(4,2,[1,2,3,4]);
     end
 
-    plot(window_times,window_m0_wind);
+    plot(window_times,window_Hs_wind);
     hold on
-    plot(window_times,window_m0_swell);
-    plot(window_times,window_m0_igw);
+    plot(window_times,window_Hs_swell);
+    plot(window_times,window_Hs_igw);
     if include_seiche
-        plot(window_times,window_m0_seiche);
+        plot(window_times,window_Hs_seiche);
     end
     yyaxis right
-    plot(trimmed_times,trimmed_depth_signal,'g--');
+    plot(trimmed_times,trimmed_depth_signal,':');
     if include_seiche
         legend('Wind','Swell','IGW','Seiche','Depth Signal');
     else

@@ -37,15 +37,16 @@ buoy_energy_flux = mean_buoy_spectra.*Cg_buoy;
 % % And last curve is NDBC Buoy
 
 figure
-semilogx(freq(n_leakage_ignore:end),running_S_1(n_leakage_ignore:end).*freq(n_leakage_ignore:end);
+semilogx(freq(n_leakage_ignore:end),running_S_1(n_leakage_ignore:end).*freq(n_leakage_ignore:end));
 for ss = 2:n_sensors
     hold on
-    eval(['semilogx(freq,running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
+    eval(['semilogx(freq(n_leakage_ignore:end),running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
 end
-xlabel('frequency (Hz)');
+xlabel('Frequency (Hz)');
 ylabel('Energy Density (m^2 / Hz)');
-title(['Energy Density from ' datestr(start_time) ' to ' datestr(end_time) '']);
+title(['Energy Density from ' datestr(start_time) ' to ' datestr(end_time) ' using ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '.']);
 legend(labels);
+ylim([0 max_varpreserv_power]);
 
 % dEF_LL_to_SB = energy_flux_2 - energy_flux_1;
 % dEF_SB_to_PN = energy_flux_3 - energy_flux_2;
