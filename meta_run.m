@@ -77,9 +77,18 @@ end
 xlabel('Datetime');
 ylabel('H_s from IGW');
 legend(labels);
-legend(labels);
 
 linkaxes(fg,'x');
+
+figure
+for ss = 1:n_sensors
+    hold on
+    eval(['wind_spd_mapped = interp1(datenum(wind.time),wind.spd,datenum(window_times_' num2str(ss) '));']);
+    eval(['plot(window_times_' num2str(ss) ',(Hs_wind_' num2str(ss) '.^2)./(wind_spd_mapped.^2));']);
+end
+xlabel('Datetime');
+ylabel('Wind Speed^2 / H_s Wind^2');
+legend(labels);
 
 % dEF_LL_to_SB = energy_flux_2 - energy_flux_1;
 % dEF_SB_to_PN = energy_flux_3 - energy_flux_2;
