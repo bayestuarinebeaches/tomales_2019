@@ -373,7 +373,7 @@ load buoy_spectra.mat
 % tmp_diffs = movmean(movmean(diffs,3),8);
 % sni.value = (tmp_diffs-min(tmp_diffs))./(max(tmp_diffs)-min(tmp_diffs));
 
-%% Correlations
+%% Energy Over Time & Correlations Stuff
 
 if do_energy_over_time
 
@@ -401,6 +401,7 @@ if do_energy_over_time
 
 %     [acf,lags,~] = autocorr(igw_energy);
 %     plot(lags.*ea_spacing,acf);
+
     figure
     sgtitle([labels{sensor_choice} ' H_s (via m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
     if visualize_conditions
@@ -422,6 +423,10 @@ if do_energy_over_time
         legend('Wind','Swell','IGW','Depth Signal');
     end
     
+    eval(['Hs_wind_' num2str(sensor_choice) ' = window_Hs_wind;']);
+    eval(['Hs_swell_' num2str(sensor_choice) ' = window_Hs_swell;']);
+    eval(['Hs_igw_' num2str(sensor_choice) ' = window_Hs_igw;']);
+    eval(['window_times_' num2str(sensor_choice) ' = window_times;']);
     
     if visualize_conditions
         ff(2) = subplot(4,2,[5,6]);
@@ -542,8 +547,8 @@ if make_spectra_plot
         
         figure
         sgtitle([labels{sensor_choice} ' Conditions from ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '. ']);
-        gg(1) = subplot(1,2,1);
-        polarscatter(wave_direction_mapped,wave_height_mapped,30,window_m0_igw,'filled');
+        hh(1) = subplot(1,2,1);
+        polarscatter(wave_direction_mapped,wave_height_mapped,30,window_m0_swell,'filled');
         hold on
         polarscatter(0,0,30,0);
         polarscatter(0,0,30,3*10^-5);
@@ -552,11 +557,11 @@ if make_spectra_plot
         pax.ThetaDir = 'clockwise';
         pax.ThetaZeroLocation = 'top';
         c = colorbar;
-        c.Label.String = 'm_0 from IGW';
-        title(['Dominant Wave Direction (theta) and Offshore Wave Height (radius) on m_0 of IGW']);
+        c.Label.String = 'm_0 from Swell';
+        title(['Dominant Wave Direction (theta) and Offshore Wave Height (radius)']);
         
-        gg(2) = subplot(1,2,2);
-        polarscatter(wave_direction_mapped,wave_period_mapped,30,window_m0_igw,'filled');
+        hh(2) = subplot(1,2,2);
+        polarscatter(wave_direction_mapped,wave_period_mapped,30,window_m0_swell,'filled');
         hold on
         polarscatter(0,0,30,0);
         polarscatter(0,0,30,3*10^-5);
@@ -565,8 +570,8 @@ if make_spectra_plot
         pax.ThetaDir = 'clockwise';
         pax.ThetaZeroLocation = 'top';
         c = colorbar;
-        c.Label.String = 'm_0 from IGW';
-        title(['Dominant Wave Direction (theta) and Offshore Wave Period (radius) on m_0 of IGW']);
+        c.Label.String = 'm_0 from Swell';
+        title(['Dominant Wave Direction (theta) and Offshore Wave Period (radius)']);
     end
 
 end
@@ -590,19 +595,19 @@ if visualize_big_spectra
         
         switch spectra_choice
             case 1
-                semilogx(freq(4:end),high_tide_running_S(4:end).*freq(4:end),'Color',colors(1,:));
-                semilogx(freq(4:end),med_tide_running_S(4:end).*freq(4:end),'Color',colors(2,:));
-                semilogx(freq(4:end),low_tide_running_S.*freq,'Color',colors(3,:));
+                semilogx(freq(n_leakage_ignore:end),high_tide_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'Color',colors(1,:));
+                semilogx(freq(n_leakage_ignore:end),med_tide_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'Color',colors(2,:));
+                semilogx(freq(n_leakage_ignore:end),low_tide_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'Color',colors(3,:));
                 legend('Total Running','High Tide','Med Tide','Low Tide');
             case 2
-                semilogx(freq,morning_running_S.*freq,'r');
-                semilogx(freq,afternoon_running_S.*freq,'g');
-                semilogx(freq,evening_running_S.*freq,'b');
+                semilogx(freq(n_leakage_ignore:end),morning_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'r');
+                semilogx(freq(n_leakage_ignore:end),afternoon_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'g');
+                semilogx(freq(n_leakage_ignore:end),evening_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'b');
                 legend('Total Running','Morning','Afternoon','Evening');
             case 3
-                semilogx(freq,flooding_running_S.*freq,'r');
-                semilogx(freq,ebbing_running_S.*freq,'g');
-                semilogx(freq,slack_running_S.*freq,'b');
+                semilogx(freq(n_leakage_ignore:end),flooding_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'r');
+                semilogx(freq(n_leakage_ignore:end),ebbing_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'g');
+                semilogx(freq(n_leakage_ignore:end),slack_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'b');
                 legend('Total Running','Flooding','Ebbing','Slack');
             otherwise
                 % Nothing! 

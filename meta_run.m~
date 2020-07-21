@@ -56,8 +56,7 @@ for ss = 1:n_sensors
 end
 xlabel('Datetime');
 ylabel('H_s from Wind');
-yyaxis right
-plot(trimmed_times,trimmed_depth_signal,'k:');
+plot(
 legend(labels);
 
 fg(2) = subplot(3,1,2);
