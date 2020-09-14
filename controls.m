@@ -18,7 +18,6 @@ pre_smooth = 0; % Default is 0
 make_spectra_plot = 1;
 visualize_conditions = 1;
 use_residual_spectra = 0;
-do_energy_over_time = 1;
 visualize_big_spectra = 1;
 include_seiche = 0;
 
