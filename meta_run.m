@@ -3,6 +3,8 @@
 
 % Last edited 17 July 2020
 
+fprintf('Make sure you turned off sensor_choice, Lukas!!\n');
+
 close all
 clear all
 
@@ -43,13 +45,16 @@ for ss = 2:n_sensors
     hold on
     eval(['semilogx(freq(n_leakage_ignore:end),running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
 end
+% semilogx(buoy_spectra.freq,mean_buoy_spectra.*buoy_spectra.freq);
 xlabel('Frequency (Hz)');
 ylabel('Energy Density (m^2 / Hz)');
 title(['Energy Density from ' datestr(start_time) ' to ' datestr(end_time) ' using ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '.']);
 legend(labels);
 ylim([0 max_varpreserv_power]);
+% And last curve is NDBC Buoy
 
-fg(1) = subplot(3,1,1);
+figure
+fg(1) = subplot(5,1,1);
 for ss = 1:n_sensors
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_wind_' num2str(ss) ');']);
@@ -60,7 +65,7 @@ yyaxis right
 plot(trimmed_times,trimmed_depth_signal,'k:');
 legend(labels);
 
-fg(2) = subplot(3,1,2);
+fg(2) = subplot(5,1,2);
 for ss = 1:n_sensors
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_swell_' num2str(ss) ');']);
@@ -69,7 +74,7 @@ xlabel('Datetime');
 ylabel('H_s from Swell');
 legend(labels);
 
-fg(3) = subplot(3,1,3);
+fg(3) = subplot(5,1,3);
 for ss = 1:n_sensors
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_igw_' num2str(ss) ');']);
@@ -78,7 +83,32 @@ xlabel('Datetime');
 ylabel('H_s from IGW');
 legend(labels);
 
+fg(4) = subplot(5,1,4);
+yyaxis right
+scatter(tbb_wind.time,tbb_wind.spd,'.');
+%         scatter(datenum(wind.time),wind.spd,'.');
+ylim([0 20]);
+ylabel('Wind Speed (m/s)');
+yyaxis left
+hold on
+scatter(tbb_wind.time,tbb_wind.dir,'+');
+%         scatter(datenum(wind.time),wind.dir,'+');
+scatter(swell.time,swell.dir,'go');
+ylabel('Direction (°)');
+ylim([0 360]); % weird outliers sometimes...
+
+fg(5) = subplot(5,1,5);
+yyaxis left
+plot(swell.time,swell.hgt,'+');
+ylabel('H_s (m)');
+hold on
+yyaxis right
+scatter(swell.time,swell.per,'.');
+ylabel('Period (s)');
+ylim([0 20]);
+
 linkaxes(fg,'x');
+xlim([min(window_times_1) max(window_times_1)]);
 
 figure
 for ss = 1:n_sensors
@@ -89,6 +119,34 @@ end
 xlabel('Datetime');
 ylabel('Wind Speed^2 / H_s Wind^2');
 legend(labels);
+
+figure
+for ss = 1:n_sensors
+    hold on
+    eval(['plot(window_times_' num2str(ss) ',Hs_wind_' num2str(ss) ');']);
+end
+xlabel('Datetime');
+ylabel('H_s from Wind');
+legend(labels);
+
+figure
+for ss = 1:n_sensors
+    hold on
+    eval(['plot(window_times_' num2str(ss) ',Hs_swell_' num2str(ss) ');']);
+end
+xlabel('Datetime');
+ylabel('H_s from Swell');
+legend(labels);
+
+figure
+for ss = 1:n_sensors
+    hold on
+    eval(['plot(window_times_' num2str(ss) ',Hs_igw_' num2str(ss) ');']);
+end
+xlabel('Datetime');
+ylabel('H_s from IGW');
+legend(labels);
+
 
 % dEF_LL_to_SB = energy_flux_2 - energy_flux_1;
 % dEF_SB_to_PN = energy_flux_3 - energy_flux_2;

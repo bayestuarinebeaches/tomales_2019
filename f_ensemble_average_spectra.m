@@ -1,8 +1,8 @@
-function [W,E] = f_ensemble_average_spectra(T,U,window_length,varargin)
+function [W,E] = f_ensemble_average_spectra(T,U,instance_length,varargin)
 % F_ENSEMBLE_AVERAGE_SPECTRA returns the power spectrum of U(T), using
 % ezfft(T,U). T is accepted as a scalar, the sampling time of the signal U
-% in seconds. The window length is the length of (non-overlapping) 
-% windows that are treated as separate ensembles (in seconds). 
+% in seconds. The instance length is the length (in seconds) of 
+% (non-overlapping) chunks that are treated as separate instances. 
 
 % Optional inputs are, firstly, a number of points to use as a moving-mean
 % frequency average. If this is not desired, use "1" to leave the signal
@@ -17,9 +17,9 @@ function [W,E] = f_ensemble_average_spectra(T,U,window_length,varargin)
 
 % Last Edited 13 February 2020
 
-measurements_per_window = (1/T)*window_length;
-running_E = zeros(1,measurements_per_window*T);
-n_ensembles = floor(length(U)/measurements_per_window);
+measurements_per_instance = (1/T)*instance_length;
+running_E = zeros(1,measurements_per_instance*T);
+n_ensembles = floor(length(U)/measurements_per_instance);
 
 if nargin == 5
     % Then the last argument is a "number of intervals"
@@ -33,7 +33,7 @@ else
 end
 
 for hh = 0:n_ensembles-1
-    [W,tE] = ezfft(T,U((hh*measurements_per_window+1):(hh+1)*measurements_per_window));
+    [W,tE] = ezfft(T,U((hh*measurements_per_instance+1):(hh+1)*measurements_per_instance));
     running_E = running_E + tE;
 end
 

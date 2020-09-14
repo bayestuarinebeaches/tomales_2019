@@ -7,14 +7,14 @@
 % labels = {'Lawsons Landing','Pelican Pt N','Pelican Pt S','Seal Beach','Wall Beach','Sacramento Landing','Tomales Beach'};
 
 % Round Two
-prepend = 'RBR_data/20190829/';
-files = {'20190829_LL_124166_data.txt','20190829_PS_124162_data.txt','20190829_SL_124168_data.txt','20190829_TB_124165_data.txt','20190829_TP_124164_data.txt','20190829_WB_124161_data.txt'};
-labels = {'Lawsons Landing','Pelican Pt S','Sacramento Landing','Tomales Beach','Tomasini Point','Wall Beach'};
+% prepend = 'RBR_data/20190829/';
+% files = {'20190829_LL_124166_data.txt','20190829_PS_124162_data.txt','20190829_SL_124168_data.txt','20190829_TB_124165_data.txt','20190829_TP_124164_data.txt','20190829_WB_124161_data.txt'};
+% labels = {'Lawsons Landing','Pelican Pt S','Sacramento Landing','Tomales Beach','Tomasini Point','Wall Beach'};
 
 % Round Three
-% prepend = 'RBR_data/20190927/';
-% files = {'20190927_LL_124127_data.txt','20190927_PN_124168_data.txt','20190927_SB_124163_data.txt','20190927_SL_124166_data.txt'};
-% labels = {'Lawsons Landing','Pelican Pt N','Seal Beach','Sacramento Landing'};
+prepend = 'RBR_data/20190927/';
+files = {'20190927_LL_124127_data.txt','20190927_PN_124168_data.txt','20190927_SB_124163_data.txt','20190927_SL_124166_data.txt'};
+labels = {'Lawsons Landing','Pelican Pt N','Seal Beach','Sacramento Landing'};
 
 % Round Four
 % prepend = 'RBR_data/20191124/';
@@ -26,8 +26,10 @@ T = 1/fs;
 
 rbr_times = {};
 rbr_pressure = {};
+rbr_depths_raw = {};
 rbr_depths_adjusted = {};
-for ii = 1:1
+
+for ii = 1:length(files)
 
     fid = fopen(strcat(prepend,files{ii}),'rt');
     tmp = textscan(fid,'%d-%d-%d %d:%d:%f,%f,%f,%f','Headerlines',1);
@@ -45,6 +47,7 @@ for ii = 1:1
     
     rbr_times{ii} = timestamp;
     rbr_pressures{ii} = pressure; % use end+1? 
+    rbr_depths_raw{ii} = depth;
     
     fprintf('Done establishing times with RBR file %d of %d.\n',ii,length(files));
 end
@@ -66,9 +69,10 @@ for kk = 1:length(files)
         g = 9.80665; % m/s^2
         
         % Note BML b_pressure is in mbar, RBR data comes in dbar
+        % f_water_density takes pressure in bars
         % depth of water above sensor is (pressure - bpressure)/(density * g)
         
-        rho = f_water_density(rbr_pressures{kk}(ll)*10, temperature.data(temperature_index), salinity.data(salinity_index));
+        rho = f_water_density(rbr_pressures{kk}(ll)/10, temperature.data(temperature_index), salinity.data(salinity_index));
         
         % We then convert pressures into Pascals for the final equation. 
         fixed_depths(ll) = (rbr_pressures{kk}(ll)*10000 - b_pressure.data(b_pressure_index)*100)/(g*rho);
@@ -79,7 +83,7 @@ for kk = 1:length(files)
     
 end
 
-save rbr_data_deployment_.mat files labels rbr_times rbr_pressures rbr_depths_adjusted
+save rbr_data_deployment_3.mat files labels rbr_times rbr_pressures rbr_depths_adjusted rbr_depths_raw
 
 %% Extra Zone
 % 

@@ -22,8 +22,5 @@ function Ss = Sd_to_Ss(ts,mab,W,Sd,varargin)
     kc = qkhfs(W,mab); % k * height above bed
     K_p = cosh(kc)./cosh(kh); % Pressure Response Factor
     Ss = Sd.*(N./K_p).^2;
-    
-    % Find index of high-frequency cutoff
-    g = 9.80665;
-%     high_freq_cutoff = sqrt(g/(4*pi
+
 end
