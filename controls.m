@@ -1,7 +1,8 @@
 %% Sensor Choice
 
 % Remove this if using META_RUN.M
-sensor_choice = 5;
+sensor_choice = 4;
+sensor_choice = input('Which sensor do you want? ');
 
 %% Mechanical Options
 % "1" turns them on, "0" turns them off
@@ -15,14 +16,17 @@ pre_smooth = 0; % Default is 0
 
 %% Visualization Options
 % "1" turns them on, "0" turns them off
-make_spectra_plot = 1;
+make_contour_graph = 0;
+make_spectral_plot = 1;
+make_wave_height_plot = 1;
 make_energy_bar_chart = 1;
 make_polar_plot = 0;
 make_chop_plot = 1;
+make_wind_start_plot = 1;
 use_residual_spectra = 0; % Default is 0
 include_seiche = 0; % Default is 0
 
-wind_option = 1;
+wind_option = 2;
 % 1 uses BOON, 2 uses TBB, 3 uses ______
 
 %% Timing Controls

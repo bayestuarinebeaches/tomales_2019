@@ -48,15 +48,15 @@
 % end_time = datenum(2019,7,25,18,0,0);
 
 %%% For THIRD Sensor Set
-load rbr_data_deployment_3.mat
-start = [2019,8,30,0,0,0];
-start_time = datenum(start);
-end_time = datenum(2019,9,27,0,0,0);
-% Note big time jump error in LL on Sept 23rd
-% Note Tomasini Point data goes UNTIL 22 NOVEMBER? uses same data as 4th deploy
-% LL, PPN, SB, SL, TP
-cmab = [460, 20, 14, 116, 3];
-end_time = datenum(2019,9,22,0,0,0);
+% load rbr_data_deployment_3.mat
+% start = [2019,8,30,0,0,0];
+% start_time = datenum(start);
+% end_time = datenum(2019,9,27,0,0,0);
+% % Note big time jump error in LL on Sept 23rd
+% % Note Tomasini Point data goes UNTIL 22 NOVEMBER? uses same data as 4th deploy
+% % LL, PPN, SB, SL, TP
+% cmab = [460, 20, 14, 116, 3];
+% end_time = datenum(2019,9,22,0,0,0);
 
 % start_time = datenum(2019,9,4,22,30,0);
 % end_time = datenum(2019,9,5,22,15,0);
@@ -69,15 +69,14 @@ end_time = datenum(2019,9,22,0,0,0);
 % end_time = datenum(2019,9,27,6,0,0);
 
 %%% For FOURTH Sensor Set
-% start = [2019,9,28,0,0,0];
-% start_time = datenum(start);
-% end_time = datenum(2019,11,21,0,0,0);
-% % load rbr_data_deployment_4.mat
-% load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
-% % LL, SB, PPN, TP
-% % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
-% cmab = [460, 14, 20, 3];
-% % end_time = datenum(2019,10,20,0,0,0);
+start = [2019,9,28,0,0,0];
+start_time = datenum(start);
+end_time = datenum(2019,11,21,0,0,0);
+load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
+% LL, SB, PPN, TP
+% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
+cmab = [460, 14, 20, 3];
+% end_time = datenum(2019,10,20,0,0,0);
 
 %% OK Actually Now, from 4th Deployment
 

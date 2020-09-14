@@ -1,5 +1,5 @@
 % Lukas WinklerPrins lukas_wp@berkeley.edu
-% Last Edited 17 July 2020
+% Last Edited 14 Sept 2020
 
 %% Load Control Parameters & Dates
 run date_controls.m
@@ -374,75 +374,77 @@ load buoy_spectra.mat
 %     [acf,lags,~] = autocorr(igw_energy);
 %     plot(lags.*ea_spacing,acf);
 
-figure
-sgtitle([labels{sensor_choice} ' H_s (via m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
+if make_wave_height_plot
+    figure
+    sgtitle([labels{sensor_choice} ' H_s (via m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
 
-% Curves of wave height over time. 
-ff(1) = subplot(4,2,[1,2,3,4]);
+    % Curves of wave height over time. 
+    ff(1) = subplot(4,2,[1,2,3,4]);
 
-plot(window_times,window_Hs_wind);
-hold on
-plot(window_times,window_Hs_swell);
-plot(window_times,window_Hs_igw);
-if include_seiche
-    plot(window_times,window_Hs_seiche);
+    plot(window_times,window_Hs_wind);
+    hold on
+    plot(window_times,window_Hs_swell);
+    plot(window_times,window_Hs_igw);
+    if include_seiche
+        plot(window_times,window_Hs_seiche);
+    end
+    yyaxis right
+    plot(trimmed_times,trimmed_depth_signal,':');
+    if include_seiche
+        legend('Wind','Swell','IGW','Seiche','Depth Signal');
+    else
+        legend('Wind','Swell','IGW','Depth Signal');
+    end
+
+    eval(['Hs_wind_' num2str(sensor_choice) ' = window_Hs_wind;']);
+    eval(['Hs_swell_' num2str(sensor_choice) ' = window_Hs_swell;']);
+    eval(['Hs_igw_' num2str(sensor_choice) ' = window_Hs_igw;']);
+    eval(['window_times_' num2str(sensor_choice) ' = window_times;']);
+
+    ff(2) = subplot(4,2,[5,6]);
+    yyaxis right
+
+    switch wind_option
+        case 1
+            scatter(wind.time,wind.spd,'.');
+        case 2
+            scatter(tbb_wind.time,tbb_wind.spd,'.');
+    end
+    ylim([0 20]);
+    ylabel('Wind Speed (m/s)');
+    yyaxis left
+    hold on
+    switch wind_option
+        case 1
+            scatter(wind.time,wind.dir,'+');
+        case 2
+            scatter(tbb_wind.time,tbb_wind.dir,'+');
+    end       
+    scatter(swell.time,swell.dir,'go');
+    ylabel('Direction (°)');
+    ylim([0 360]); % weird outliers sometimes...
+
+    ff(3) = subplot(4,2,[7,8]);
+    yyaxis left
+    plot(swell.time,swell.hgt,'+');
+    ylabel('H_s (m)');
+    hold on
+    plot(trimmed_times,trimmed_depth_signal,'k-');
+    yyaxis right
+    scatter(swell.time,swell.per,'.');
+    ylabel('Period (s)');
+    ylim([0 20]);
+
+    linkaxes(ff,'x');
+    xlim([min(trimmed_times) max(trimmed_times)]);
 end
-yyaxis right
-plot(trimmed_times,trimmed_depth_signal,':');
-if include_seiche
-    legend('Wind','Swell','IGW','Seiche','Depth Signal');
-else
-    legend('Wind','Swell','IGW','Depth Signal');
-end
-
-eval(['Hs_wind_' num2str(sensor_choice) ' = window_Hs_wind;']);
-eval(['Hs_swell_' num2str(sensor_choice) ' = window_Hs_swell;']);
-eval(['Hs_igw_' num2str(sensor_choice) ' = window_Hs_igw;']);
-eval(['window_times_' num2str(sensor_choice) ' = window_times;']);
-
-ff(2) = subplot(4,2,[5,6]);
-yyaxis right
-
-switch wind_option
-    case 1
-        scatter(wind.time,wind.spd,'.');
-    case 2
-        scatter(tbb_wind.time,tbb_wind.spd,'.');
-end
-ylim([0 20]);
-ylabel('Wind Speed (m/s)');
-yyaxis left
-hold on
-switch wind_option
-    case 1
-        scatter(wind.time,wind.dir,'+');
-    case 2
-        scatter(tbb_wind.time,tbb_wind.dir,'+');
-end       
-scatter(swell.time,swell.dir,'go');
-ylabel('Direction (°)');
-ylim([0 360]); % weird outliers sometimes...
-
-ff(3) = subplot(4,2,[7,8]);
-yyaxis left
-plot(swell.time,swell.hgt,'+');
-ylabel('H_s (m)');
-hold on
-plot(trimmed_times,trimmed_depth_signal,'k-');
-yyaxis right
-scatter(swell.time,swell.per,'.');
-ylabel('Period (s)');
-ylim([0 20]);
-
-linkaxes(ff,'x');
-xlim([min(trimmed_times) max(trimmed_times)]);
 
 %% Contour Plotting
 
 logSt = logSt'; % Transpose! 
 matrixSfreq = matrixSfreq';
 
-if make_spectra_plot
+if make_contour_graph
     figure
     sgtitle([labels{sensor_choice} ' Spectra, ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '. ' extra]);
 
@@ -523,17 +525,16 @@ end
 
 wave_period_mapped = interp1(datenum(swell.time),swell.per,datenum(window_times'));
 wave_height_mapped = interp1(datenum(swell.time),swell.hgt,datenum(window_times'));
-wave_direction_mapped = interp1(datenum(swell.time),double(swell.dir),datenum(window_times')).*(2*pi/360);
 
 switch wind_option
     case 1
         wind_speed_mapped = interp1(datenum(wind.time),wind.spd,datenum(window_times'));
-        wind_dir_mapped = interp1(datenum(wind.time),wind.dir,datenum(window_times'));
+        wind_dir_mapped = interp1(datenum(wind.time),double(wind.dir),datenum(window_times'));
     case 2
         wind_speed_mapped = interp1(datenum(tbb_wind.time),tbb_wind.spd,datenum(window_times'));
         wind_dir_mapped = interp1(datenum(tbb_wind.time),tbb_wind.dir,datenum(window_times'));
 end
-wind_direction_NW = wave_direction_mapped > 4.89;
+wind_direction_NW = wind_dir_mapped > 280; % in degrees, 4.89 for radians
 eval(['Hs_wind_timeseries = Hs_wind_' num2str(sensor_choice) ';']);
 Hs_wind_timeseries = Hs_wind_timeseries';
 
@@ -580,17 +581,17 @@ F = 13; % km
 H_m0_spm_fl = (5.112*10^-4).*U_A.*(F^0.5);
 H_m0_spm_fd = (2.482*20^-2).*(U_A.^2);
 
-n_points_to_average = 4;
-
 if make_chop_plot
+    n_points_to_average = 4;
+    
     figure
     %         scatter(window_depths,wind_speed_mapped,30,Hs_wind_timeseries,'filled');
     %         scatter(wind_speed_mapped,Hs_wind_timeseries,30,'filled');
     tmp1 = wind_speed_mapped.*wind_direction_NW;
     tmp2 = Hs_wind_timeseries.*wind_direction_NW;
-    wind_speed_mapped_left_movmean = movmean(tmp1,[n_points_to_average,0]);
+    wind_speed_mapped_left_movmean = movmean(wind_speed_mapped,[n_points_to_average,0]);
     scatter(tmp1, tmp2, 25, wind_speed_mapped_left_movmean,'filled');
-    fprintf('In Wind plot, only plotting points with NWish winds.\n');
+    fprintf('In Chop plot, only plotting points with NWish winds.\n');
     colormap cool
     c = colorbar;
     c.Label.String = [num2str(n_points_to_average) '-Window Left-Handed Mean Wind Speed'];
@@ -608,53 +609,75 @@ if make_chop_plot
     title(['Wind Chop Development at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
 end
 
+if make_wind_start_plot
+    figure
+    switch wind_option
+        case 1
+            scatter(wind.time,wind.spd,'.');
+        case 2
+            scatter(tbb_wind.time,tbb_wind.spd,'.');
+    end
+    hold on
+    ylim([0 25]);
+    ylabel('Wind Speed (m/s)');
+    yyaxis right
+    plot(window_times,window_Hs_wind,'r-');
+    ylabel('H_s due to Wind');
+    xlim([min(window_times),max(window_times)]);
+    xlabel('Date');
+    title(['Wind Chop Development at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
+    
+end
+
 %% "Big Spectrum" Plotting
 
 start_color = [149,111,49]./255; % light brown
 end_color = [51,237,233]./255; % aqua
 colors = [linspace(start_color(1),end_color(1),3)',linspace(start_color(2),end_color(2),3)',linspace(start_color(3),end_color(3),3)'];
 
-figure
-if variance_preserving
-    if use_median_power
-        medianS = median(matrixS);
-        semilogx(freq(n_leakage_ignore:end),medianS(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'k');
+if make_spectral_plot
+    figure
+    if variance_preserving
+        if use_median_power
+            medianS = median(matrixS);
+            semilogx(freq(n_leakage_ignore:end),medianS(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'k');
+        else
+            semilogx(freq(n_leakage_ignore:end),running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'k');
+        end
+        hold on
+
+        semilogx(freq(n_leakage_ignore:end),flooding_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'r');
+        semilogx(freq(n_leakage_ignore:end),ebbing_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'g');
+        semilogx(freq(n_leakage_ignore:end),high_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'b');
+        semilogx(freq(n_leakage_ignore:end),low_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'m');
+        legend('Total Running','Flooding','Ebbing','High Slack','Low Slack');
+
+        ylabel('Variance Per Hz');
+    %         tmp_max = max([high_tide_running_S med_tide_running_S low_tide_running_S]);
+        axis([min(freq),max(freq),0,max_varpreserv_power]);
+        % 2*10^-3 is a good alternative upper bound
+
     else
-        semilogx(freq(n_leakage_ignore:end),running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'k');
+    %         loglog(freq,big_average_S,'b');
+    %         hold on
+        loglog(freq(n_leakage_ignore:end),running_S(n_leakage_ignore:end),'b');
+        axis([min(freq),max(freq),10^-8,10^-2]);
+        ylabel('Depth Power Density (m^2/Hz)');
     end
-    hold on
+    xlabel('Frequency (Hz)');
+    title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
 
-    semilogx(freq(n_leakage_ignore:end),flooding_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'r');
-    semilogx(freq(n_leakage_ignore:end),ebbing_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'g');
-    semilogx(freq(n_leakage_ignore:end),high_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'b');
-    semilogx(freq(n_leakage_ignore:end),low_running_S(n_leakage_ignore:end).*freq(n_leakage_ignore:end),'m');
-    legend('Total Running','Flooding','Ebbing','High Slack','Low Slack');
+    % OK actually we're just gonna fit to the juicy middle part...
+    [~,si] = min(abs(freq - 10^-2));
+    [~,ei] = min(abs(freq - 10^-1));
 
-    ylabel('Variance Per Hz');
-%         tmp_max = max([high_tide_running_S med_tide_running_S low_tide_running_S]);
-    axis([min(freq),max(freq),0,max_varpreserv_power]);
-    % 2*10^-3 is a good alternative upper bound
+    % Or maybe just 0.05 Hz to the end, per Hughes et al 2014
+    %     [~,si] = min(abs(freq - 0.05)); % to end
 
-else
-%         loglog(freq,big_average_S,'b');
-%         hold on
-    loglog(freq(n_leakage_ignore:end),running_S(n_leakage_ignore:end),'b');
-    axis([min(freq),max(freq),10^-8,10^-2]);
-    ylabel('Depth Power Density (m^2/Hz)');
+    fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
+
+    fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 end
-xlabel('Frequency (Hz)');
-title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
-
-% OK actually we're just gonna fit to the juicy middle part...
-[~,si] = min(abs(freq - 10^-2));
-[~,ei] = min(abs(freq - 10^-1));
-
-% Or maybe just 0.05 Hz to the end, per Hughes et al 2014
-%     [~,si] = min(abs(freq - 0.05)); % to end
-
-fitcoeff = polyfit(logfreq(si:ei),logBigS(si:ei),1);
-
-fprintf('Spectra curve slope is %f\n',fitcoeff(1));
 
 
 %% Energy Flux & Dissipation Stuff
