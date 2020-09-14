@@ -16,17 +16,14 @@ pre_smooth = 0; % Default is 0
 %% Visualization Options
 % "1" turns them on, "0" turns them off
 make_spectra_plot = 1;
-visualize_conditions = 1;
-use_residual_spectra = 0;
-visualize_big_spectra = 1;
-include_seiche = 0;
+make_energy_bar_chart = 1;
+make_polar_plot = 0;
+make_chop_plot = 1;
+use_residual_spectra = 0; % Default is 0
+include_seiche = 0; % Default is 0
 
-% Spectrum Choice: 0 for none
-%                  1 for High/Trans/Low Tide
-%                  2 for Morning/Midday/Evening
-%                  3 for Flooding/Ebbing/Slack
-%                  4 for High / Low / Ebbing / Flooding
-spectra_choice = 4;
+wind_option = 1;
+% 1 uses BOON, 2 uses TBB, 3 uses ______
 
 %% Timing Controls
 % ALL THREE OF THE NEXT VARIABLES ARE IN HOURS
