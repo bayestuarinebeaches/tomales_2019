@@ -321,7 +321,7 @@ if make_energy_bar_chart
         percent_seiche = m0_seiche/(m0_wind+m0_swell+m0_igw+m0_seiche);
         bar_labels = categorical({'Wind','Swell','IGW','Seiche'});
         bar_labels = reordercats(bar_labels,{'Wind','Swell','IGW','Seiche'});
-        b = bar(bar_labels,[m0_wind,m0_swell,m0_igw,m0_seiche]);
+        b = bar(bar_labels,[Hs_wind,Hs_swell,Hs_igw,Hs_seiche]);
         xtips = b.XEndPoints;
         ytips = b.YEndPoints;
         text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2),num2str(percent_seiche,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
@@ -331,13 +331,15 @@ if make_energy_bar_chart
         percent_igw = m0_igw/(m0_wind+m0_swell+m0_igw);
         bar_labels = categorical({'Wind','Swell','IGW'});
         bar_labels = reordercats(bar_labels,{'Wind','Swell','IGW'});
-        b = bar(categorical({'Wind','Swell','IGW'}),[m0_wind,m0_swell,m0_igw]);
+        b = bar(categorical({'Wind','Swell','IGW'}),[Hs_wind,Hs_swell,Hs_igw]);
         xtips = b.XEndPoints;
         ytips = b.YEndPoints;
-        text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
+%         text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2)},'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',35);
+        text(xtips,ytips,{num2str(Hs_wind,2),num2str(Hs_swell,2),num2str(Hs_igw,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
     end
-    title(['Energy (m^2) Values for ' labels{sensor_choice}]);
-    ylim([0 4*10^-5]);
+    title(['Energy Proportions at ' labels{sensor_choice}]);
+    ylim([0 0.15]);
+    ylabel('Wave Heights (m)');
 end
 
 %% Conditions
@@ -346,6 +348,7 @@ end
 load conditions.mat
 load tbb_wind.mat
 load buoy_spectra.mat
+load hioc_wind.mat
 
 %% Energy Over Time & Correlations Stuff
 
@@ -388,8 +391,8 @@ if make_wave_height_plot
     if include_seiche
         plot(window_times,window_Hs_seiche);
     end
-    yyaxis right
-    plot(trimmed_times,trimmed_depth_signal,':');
+%     yyaxis right
+%     plot(trimmed_times,trimmed_depth_signal,':');
     if include_seiche
         legend('Wind','Swell','IGW','Seiche','Depth Signal');
     else
@@ -409,6 +412,10 @@ if make_wave_height_plot
             scatter(wind.time,wind.spd,'.');
         case 2
             scatter(tbb_wind.time,tbb_wind.spd,'.');
+        case 3
+            scatter(hioc_wind.time,hioc_wind.spd,'.');
+        case 4
+            scatter(tboc_wind.time,tboc_wind.spd,'.');
     end
     ylim([0 20]);
     ylabel('Wind Speed (m/s)');
@@ -419,8 +426,12 @@ if make_wave_height_plot
             scatter(wind.time,wind.dir,'+');
         case 2
             scatter(tbb_wind.time,tbb_wind.dir,'+');
+        case 3
+            scatter(hioc_wind.time,hioc_wind.dir,'+');
+        case 4
+            scatter(tboc_wind.time,tboc_wind.dir,'+');
     end       
-    scatter(swell.time,swell.dir,'go');
+%     scatter(swell.time,swell.dir,'go');
     ylabel('Direction (°)');
     ylim([0 360]); % weird outliers sometimes...
 
@@ -436,7 +447,7 @@ if make_wave_height_plot
     ylim([0 20]);
 
     linkaxes(ff,'x');
-    xlim([min(trimmed_times) max(trimmed_times)]);
+%     xlim([min(trimmed_times) max(trimmed_times)]);
 end
 
 %% Contour Plotting
@@ -490,6 +501,10 @@ if make_contour_graph
             scatter(datenum(wind.time),wind.spd,'.');
         case 2
             scatter(datenum(tbb_wind.time),tbb_wind.spd,'.');
+        case 3
+            scatter(datenum(hioc_wind.time),hioc_wind.spd,'.');
+        case 4
+            scatter(datenum(tboc_wind.time),tboc_wind.spd,'.');
     end
     
     ylim([0 20]);
@@ -501,6 +516,10 @@ if make_contour_graph
             scatter(datenum(wind.time),wind.dir,'+');
         case 2
             scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
+        case 3
+            scatter(datenum(hioc_wind.time),hioc_wind.dir,'+');
+        case 4
+            scatter(datenum(tboc_wind.time),tboc_wind.dir,'+');
     end   
     scatter(datenum(swell.time),swell.dir,'go');
     ylabel('Direction (°)');
@@ -533,6 +552,12 @@ switch wind_option
     case 2
         wind_speed_mapped = interp1(datenum(tbb_wind.time),tbb_wind.spd,datenum(window_times'));
         wind_dir_mapped = interp1(datenum(tbb_wind.time),tbb_wind.dir,datenum(window_times'));
+    case 3
+        wind_speed_mapped = interp1(datenum(hioc_wind.time),hioc_wind.spd,datenum(window_times'));
+        wind_dir_mapped = interp1(datenum(hioc_wind.time),hioc_wind.dir,datenum(window_times'));
+    case 4
+        wind_speed_mapped = interp1(datenum(tboc_wind.time),tboc_wind.spd,datenum(window_times'));
+        wind_dir_mapped = interp1(datenum(tboc_wind.time),tboc_wind.dir,datenum(window_times'));
 end
 wind_direction_NW = wind_dir_mapped > 280; % in degrees, 4.89 for radians
 eval(['Hs_wind_timeseries = Hs_wind_' num2str(sensor_choice) ';']);
@@ -573,7 +598,7 @@ end
 % Wind Speeds
 U = 0:0.1:20; % m/s
 U_A = 0.71*U.^1.23; % per SPM 3-28a
-F = 13; % km
+F = fetch(sensor_choice); % km
 
 %         H_m0_spm_fl = (U_A.^2).*((g^-1)*1.6*(10^-3)*(g*F./(U_A.^2)).^(1/2));
 %         H_m0_spm_fd = (U_A.^2).*((g^-1)*2.433*10^-1);
@@ -584,29 +609,36 @@ H_m0_spm_fd = (2.482*20^-2).*(U_A.^2);
 if make_chop_plot
     n_points_to_average = 4;
     
-    figure
-    %         scatter(window_depths,wind_speed_mapped,30,Hs_wind_timeseries,'filled');
-    %         scatter(wind_speed_mapped,Hs_wind_timeseries,30,'filled');
     tmp1 = wind_speed_mapped.*wind_direction_NW;
     tmp2 = Hs_wind_timeseries.*wind_direction_NW;
     wind_speed_mapped_left_movmean = movmean(wind_speed_mapped,[n_points_to_average,0]);
+    
+    figure
     scatter(tmp1, tmp2, 25, wind_speed_mapped_left_movmean,'filled');
     fprintf('In Chop plot, only plotting points with NWish winds.\n');
-    colormap cool
-    c = colorbar;
-    c.Label.String = [num2str(n_points_to_average) '-Window Left-Handed Mean Wind Speed'];
-
     hold on
     plot(U,H_m0_spm_fl);
     plot(U,H_m0_spm_fd);
-
+    
+    colormap cool
+    c = colorbar;
+    c.Label.String = [num2str(n_points_to_average) '-Window Left-Handed Mean Wind Speed'];
     xlabel('Wind Speed (m/s)');
     ylabel('H_s in Wind Chop (m)');
     ylim([0 0.3]);
     xlim([0 25]);
-    %         xlabel('Water Depth (m)');
     legend('Data','Fetch-Limited','Fully-Developed');
     title(['Wind Chop Development at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
+    
+    figure
+    scatter(tmp1,window_depths,35,tmp2,'filled');
+    colormap cool
+    c = colorbar;
+    xlabel('Wind Speed (m/s)');
+    ylabel('Water Depth (m)');
+    c.Label.String = 'H_s Wind (m)';
+    title(['Wind Chop Height at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
+    
 end
 
 if make_wind_start_plot
@@ -616,6 +648,10 @@ if make_wind_start_plot
             scatter(wind.time,wind.spd,'.');
         case 2
             scatter(tbb_wind.time,tbb_wind.spd,'.');
+        case 3
+            scatter(hioc_wind.time, hioc_wind.spd,'.');
+        case 4
+            scatter(tboc_wind.time, tboc_wind.spd,'.');
     end
     hold on
     ylim([0 25]);

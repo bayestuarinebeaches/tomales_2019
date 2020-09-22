@@ -1,7 +1,6 @@
 %% Sensor Choice
 
 % Remove this if using META_RUN.M
-sensor_choice = 4;
 sensor_choice = input('Which sensor do you want? ');
 
 %% Mechanical Options
@@ -26,8 +25,8 @@ make_wind_start_plot = 1;
 use_residual_spectra = 0; % Default is 0
 include_seiche = 0; % Default is 0
 
-wind_option = 2;
-% 1 uses BOON, 2 uses TBB, 3 uses ______
+wind_option = 3;
+% 1 uses BOON, 2 uses TBB, 3 uses HIOC
 
 %% Timing Controls
 % ALL THREE OF THE NEXT VARIABLES ARE IN HOURS

@@ -75,7 +75,8 @@ end_time = datenum(2019,11,21,0,0,0);
 load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
 % LL, SB, PPN, TP
 % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
-cmab = [460, 14, 20, 3];
+cmab = [460, 14, 20, 5];
+fetch = [0.6 1.1 3.5 12.8];
 % end_time = datenum(2019,10,20,0,0,0);
 
 %% OK Actually Now, from 4th Deployment

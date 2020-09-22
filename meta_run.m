@@ -15,7 +15,7 @@ n_sensors = length(cmab);
 
 for ss = 1:n_sensors
     sensor_choice = ss;
-    make_contour_plot
+    run_analysis
 end
 
 [~,si] = min(abs(start_time - datenum(buoy_spectra.time)));
