@@ -11,9 +11,10 @@ clear all
 run date_controls.m
 run controls.m
 
-n_sensors = length(cmab);
+sensor_index = [2 4]; % 1:length(cmab)
+n_sensors = length(sensor_index);
 
-for ss = 1:n_sensors
+for ss = sensor_index 
     sensor_choice = ss;
     run_analysis
 end
@@ -23,25 +24,24 @@ end
 mean_buoy_spectra = mean(buoy_spectra.spectra(si:ei,:));
 
 Cg_buoy = (g/(4*pi)).*(1./buoy_spectra.freq); % Using deep-water assumption
-
 buoy_energy_flux = mean_buoy_spectra.*Cg_buoy;
 
-% figure
+figure
 % loglog(freq,energy_flux_1);
-% for ss = 2:n_sensors
-%     hold on
-%     eval(['loglog(freq,energy_flux_' num2str(ss) ');']);
-% end
-% loglog(buoy_spectra.freq,buoy_energy_flux);
-% xlabel('frequency (Hz)');
-% ylabel('Energy Flux (m^3/s)');
-% title(['Energy Flux from ' datestr(start_time) ' to ' datestr(end_time) '']);
-% legend(labels);
-% % And last curve is NDBC Buoy
+for ss = sensor_index
+    hold on
+    eval(['loglog(freq,energy_flux_' num2str(ss) ');']);
+end
+loglog(buoy_spectra.freq,buoy_energy_flux);
+xlabel('frequency (Hz)');
+ylabel('Energy Flux (ish) (m^3/s)');
+title(['Energy Flux from ' datestr(start_time) ' to ' datestr(end_time) '']);
+legend(labels);
+% And last curve is NDBC Buoy
 
 figure
-semilogx(freq(n_leakage_ignore:end),running_S_1(n_leakage_ignore:end).*freq(n_leakage_ignore:end));
-for ss = 2:n_sensors
+% semilogx(freq(n_leakage_ignore:end),running_S_1(n_leakage_ignore:end).*freq(n_leakage_ignore:end));
+for ss = sensor_index
     hold on
     eval(['semilogx(freq(n_leakage_ignore:end),running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
 end
@@ -54,8 +54,28 @@ ylim([0 max_varpreserv_power]);
 % And last curve is NDBC Buoy
 
 figure
+index = 1;
+for ss = sensor_index
+    f(index) = subplot(1,n_sensors,index);
+    eval(['semilogx(freq(n_leakage_ignore:end),running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
+    hold on
+    eval(['semilogx(freq(n_leakage_ignore:end),flooding_running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
+    eval(['semilogx(freq(n_leakage_ignore:end),ebbing_running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
+    eval(['semilogx(freq(n_leakage_ignore:end),high_running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
+    eval(['semilogx(freq(n_leakage_ignore:end),low_running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
+    ylabel('Variance Per Hz');
+    xlabel('Frequency (Hz)');
+    title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{ss}]);
+    axis([min(freq),max(freq),0,max_varpreserv_power]);
+    index = index + 1;
+end
+legend('Total Running','Flooding','Ebbing','High Slack','Low Slack');
+linkaxes(f,'y');
+
+
+figure
 fg(1) = subplot(5,1,1);
-for ss = 1:n_sensors
+for ss = sensor_index
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_wind_' num2str(ss) ');']);
 end
@@ -66,7 +86,7 @@ plot(trimmed_times,trimmed_depth_signal,'k:');
 legend(labels);
 
 fg(2) = subplot(5,1,2);
-for ss = 1:n_sensors
+for ss = sensor_index
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_swell_' num2str(ss) ');']);
 end
@@ -75,7 +95,7 @@ ylabel('H_s from Swell');
 legend(labels);
 
 fg(3) = subplot(5,1,3);
-for ss = 1:n_sensors
+for ss = sensor_index
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_igw_' num2str(ss) ');']);
 end
@@ -91,7 +111,7 @@ ylim([0 20]);
 ylabel('Wind Speed (m/s)');
 yyaxis left
 hold on
-scatter(tbb_wind.time,tbb_wind.dir,'+');
+scatter(bml_wind.dir_time,bml_wind.dir,'+');
 %         scatter(datenum(wind.time),wind.dir,'+');
 scatter(swell.time,swell.dir,'go');
 ylabel('Direction (°)');
@@ -108,20 +128,20 @@ ylabel('Period (s)');
 ylim([0 20]);
 
 linkaxes(fg,'x');
-xlim([min(window_times_1) max(window_times_1)]);
+% xlim([min(window_times_1) max(window_times_1)]);
+
+% figure
+% for ss = sensor_index
+%     hold on
+%     eval(['wind_spd_mapped = interp1(datenum(bml_wind.spd_time),bml_wind.spd,datenum(window_times_' num2str(ss) '));']);
+%     eval(['plot(window_times_' num2str(ss) ',(Hs_wind_' num2str(ss) '.^2)./(wind_spd_mapped.^2));']);
+% end
+% xlabel('Datetime');
+% ylabel('Wind Speed^2 / H_s Wind^2');
+% legend(labels);
 
 figure
-for ss = 1:n_sensors
-    hold on
-    eval(['wind_spd_mapped = interp1(datenum(wind.time),wind.spd,datenum(window_times_' num2str(ss) '));']);
-    eval(['plot(window_times_' num2str(ss) ',(Hs_wind_' num2str(ss) '.^2)./(wind_spd_mapped.^2));']);
-end
-xlabel('Datetime');
-ylabel('Wind Speed^2 / H_s Wind^2');
-legend(labels);
-
-figure
-for ss = 1:n_sensors
+for ss = sensor_index
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_wind_' num2str(ss) ');']);
 end
@@ -130,7 +150,7 @@ ylabel('H_s from Wind');
 legend(labels);
 
 figure
-for ss = 1:n_sensors
+for ss = sensor_index
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_swell_' num2str(ss) ');']);
 end
@@ -139,7 +159,7 @@ ylabel('H_s from Swell');
 legend(labels);
 
 figure
-for ss = 1:n_sensors
+for ss = sensor_index
     hold on
     eval(['plot(window_times_' num2str(ss) ',Hs_igw_' num2str(ss) ');']);
 end

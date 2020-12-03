@@ -2,7 +2,7 @@
 
 % Bring in labels{}, rbr_depths{}, rbr_times{}, rbr_pressures{}, rbr_depths_adjusted{}
 
-%%% For Botany Bay Data
+%% For Botany Bay Data
 % start = [2018,6,22,12,0,0];
 % start_time = datenum(start);
 % end_time = datenum(2018,7,24,0,0,0);
@@ -13,14 +13,14 @@
 % start_time = datenum(2018,7,13,0,0,0);
 % end_time = datenum(2018,7,16,0,0,0);
     
-%%% For FIRST Sensor Set
+%% For FIRST Sensor Set
 % NEED TO GET RBR DATA INTO MAT...
 % start_time = datenum(2019,6,4,12,0,0);
 % end_time = datenum(2019,7,16,0,0,0);
 % %        LL  PN  PS  SB  WB  SL   TB
 % cmab = [460, 20, 14, 47, 25, 116, 30];
 
-%%% For SECOND Sensor Set
+%% For SECOND Sensor Set
 % load rbr_data_deployment_2.mat
 % start = [2019,7,19,0,0,0];
 % start_time = datenum(start);
@@ -29,7 +29,9 @@
 % % N.B. Wall Beach got mangled on Aug 5?try to go before or after this
 % % Tomasini only deployed 8/1
 % cmab = [460, 14, 116, 30, 3, 25];
-% start_time = datenum(2019,8,6,0,0,0);
+% % start_time = datenum(2019,8,6,0,0,0);
+% end_time = datenum(2019,8,5,0,0,0);
+% fetch = [0.6 0 8.5 3.5 5.1 12.8 2.5];
 
 % Random period to examine
 % start_time = datenum(2019,7,26,0,0,0);
@@ -47,7 +49,7 @@
 % start_time = datenum(2019,7,24,6,0,0);
 % end_time = datenum(2019,7,25,18,0,0);
 
-%%% For THIRD Sensor Set
+%% For THIRD Sensor Set
 % load rbr_data_deployment_3.mat
 % start = [2019,8,30,0,0,0];
 % start_time = datenum(start);
@@ -57,6 +59,9 @@
 % % LL, PPN, SB, SL, TP
 % cmab = [460, 20, 14, 116, 3];
 % end_time = datenum(2019,9,22,0,0,0);
+% fetch = [0.6 1.1 0.9 8 10.2]; % 8 for SL is a total guess
+
+% Sept 12 - 15 good spread to look at diurnal winds
 
 % start_time = datenum(2019,9,4,22,30,0);
 % end_time = datenum(2019,9,5,22,15,0);
@@ -68,16 +73,17 @@
 % start_time = datenum(2019,9,24,12,0,0);
 % end_time = datenum(2019,9,27,6,0,0);
 
-%%% For FOURTH Sensor Set
+%% For FOURTH Sensor Set
 start = [2019,9,28,0,0,0];
 start_time = datenum(start);
 end_time = datenum(2019,11,21,0,0,0);
-load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
+% load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
+load rbr_data_deployment_4_tweaked.mat
 % LL, SB, PPN, TP
 % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
 cmab = [460, 14, 20, 5];
-fetch = [0.6 1.1 3.5 12.8];
-% end_time = datenum(2019,10,20,0,0,0);
+fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point. 
+% % end_time = datenum(2019,10,20,0,0,0);
 
 %% OK Actually Now, from 4th Deployment
 
@@ -85,13 +91,19 @@ fetch = [0.6 1.1 3.5 12.8];
 % start_time = datenum(2019,10,27,8,0,0);
 % end_time = datenum(2019,10,28,0,0,0);
 
-% Nov 7, Swell Day
-% start_time = datenum(2019,11,7,12,0,0);
-% end_time = datenum(2019,11,8,12,0,0);
+% start_time = datenum(2019,9,28,12,0,0);
+% end_time = datenum(2019,9,29,12,0,0);
+
+% Nov 15/16, Swell Day (a little wind too)
+% start_time = datenum(2019,11,15,12,0,0);
+% end_time = datenum(2019,11,16,12,0,0);
 
 % Oct 18, "Combo" Day
 % start_time = datenum(2019,10,18,0,0,0);
 % end_time = datenum(2019,10,19,0,0,0);
+
+% start_time = datenum(2019,10,27,0,0,0);
+% end_time = datenum(2019,10,28,0,0,0);
 
 % Consistently Windy over a couple tides
 % start_time = datenum(2019,9,28,8,0,0);
@@ -100,13 +112,27 @@ fetch = [0.6 1.1 3.5 12.8];
 % start_time = datenum(2019,9,27,0,0,0);
 % end_time = datenum(2019,9,29,0,0,0);
 
+% NOTHING GOING "calm" DAY
+% start_time = datenum(2019,10,12,0,0,0);
+% end_time = datenum(2019,10,13,0,0,0);
 
 % Other
 % start_time = datenum(2019,9,24,8,0,0);
 % end_time = datenum(2019,9,26,8,0,0);
 
+%% 5th Deployment
 
-%% Rubbish Bin
+% start = [2019,11,26,0,0,0];
+% start = [2019,12,12,0,0,0]; % TP started later
+% start_time = datenum(start);
+% end_time = datenum(2020,1,27,0,0,0);
+% load rbr_data_deployment_5.mat
+% % LL, SB, PPN, TP
+% cmab = [460, 14, 20, 5];
+% fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point.
+
+
+%% Rubbish Bin for 4th deployment
 
 % Sept 28-29 - Big Wind Event, Spring Tide, No particular swell
 % start_time = datenum(2019,9,28,12,0,0);
