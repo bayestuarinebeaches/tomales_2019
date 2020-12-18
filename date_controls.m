@@ -83,6 +83,7 @@ load rbr_data_deployment_4_tweaked.mat
 % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
 cmab = [460, 14, 20, 5];
 fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point. 
+D50s = [0.13, 0.30, 1.27, 0.1]; % in mm, TP is a total guess as of 11 Dec 2020
 % % end_time = datenum(2019,10,20,0,0,0);
 
 %% OK Actually Now, from 4th Deployment

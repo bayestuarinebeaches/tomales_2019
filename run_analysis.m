@@ -41,7 +41,7 @@ switch wind_option
         fprintf('Using TBB wind speeds, BOON wind directions.\n');
 end
 
-%% Setup Parameters & Signal
+%% Setup Parameters
 
 % Cutoffs between types of waves (in seconds)
 max_period_wind = 4;
@@ -68,6 +68,8 @@ max_varpreserv_power = 1*10^-4; % good for TB data
 
 g = 9.80665;
 
+ws = (((D50s(sensor_choice)*10^-3)^2)/18)*(1650/(1.31*10^-3))*g; % Settling velocity using D50; note converting mm to m
+
 if end_time - start_time < 0.75
     use_t_tide = 0;
     fprintf('Time window less than 18 hours: will not use t_tide to de-tide as it gets imprecise.\n');
@@ -83,6 +85,7 @@ end
 T = seconds(rbr_times{1}(2)-rbr_times{1}(1)); % seconds
 fs = 1/T; % Hz
 
+%% Set up the Signal
 depth_signal = rbr_depths_adjusted{sensor_choice}; % depth_signal = rbr_depths_raw{sensor_choice} % for testing
 
 times = datenum(rbr_times{sensor_choice});
@@ -168,8 +171,13 @@ window_m0_wind = zeros(1,n_windows);
 window_m0_swell = zeros(1,n_windows);
 window_m0_igw = zeros(1,n_windows);
 window_m0_seiche = zeros(1,n_windows);
+window_m0_total = zeros(1,n_windows);
 window_times = [datetime(2020,1,1,1,1,1)]; % To initiate it
 window_Tp = zeros(1,n_windows);
+window_m2_total = zeros(1,n_windows);
+window_APD = zeros(1,n_windows);
+window_nondimparameter = zeros(1,n_windows);
+
 running_S = zeros(size(big_average_S));
 
 flooding_running_S = zeros(1,length(big_average_S));
@@ -284,10 +292,15 @@ for nn = 0:n_windows-1
     window_m0_swell(nn+1) = m0_swell;
     window_m0_igw(nn+1) = m0_igw;
     window_m0_seiche(nn+1) = m0_seiche;
+    window_m0_total(nn+1) = m0_wind + m0_swell + m0_igw + m0_seiche;
+    [~,ei] = min(abs(freq - hfc));
+    window_m2_total(nn+1) = trapz(freq(2:ei).^2,S(2:ei));
+    window_APD(nn+1) = sqrt(window_m0_total(nn+1)./window_m2_total(nn+1));
     window_Hs_wind(nn+1) = 4*sqrt(m0_wind);
     window_Hs_swell(nn+1) = 4*sqrt(m0_swell);
     window_Hs_igw(nn+1) = 4*sqrt(m0_igw);
     window_Hs_seiche(nn+1) = 4*sqrt(m0_seiche);
+    window_nondimparameter(nn+1) = ws*window_APD(nn+1)/window_depths(nn+1);
 end
 
 running_S = running_S./n_windows;
@@ -338,12 +351,14 @@ m0_seiche = trapz(freq(2:ei),running_S(2:ei));
 % total
 [~,ei] = min(abs(freq - hfc));
 m0_total = trapz(freq(n_leakage_ignore:ei),running_S(n_leakage_ignore:ei));
+m2_total = trapz(freq(n_leakage_ignore:ei).^2,running_S(n_leakage_ignore:ei));
 
 Hs_wind = 4*sqrt(m0_wind);
 Hs_swell = 4*sqrt(m0_swell);
 Hs_igw = 4*sqrt(m0_igw);
 Hs_seiche = 4*sqrt(m0_seiche);
 Hs_total = 4*sqrt(m0_total);
+APD_total = sqrt(m0_total/m2_total);
 
 % fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs Seiche = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_seiche);
 fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs TOTAL = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_total);
@@ -617,6 +632,8 @@ Hs_wind_timeseries = Hs_wind_timeseries';
 Hs_swell_timeseries = Hs_swell_timeseries';
 Hs_igw_timeseries = Hs_igw_timeseries';
 
+
+%% Polar Plotting
 if make_polar_plot
     figure
     sgtitle([labels{sensor_choice} ' Conditions from ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '. ']);
@@ -707,6 +724,7 @@ if make_chop_plot
     title(['Wind Chop Height at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
 end
 
+%% Etc Plotting
 if make_swell_plot
     figure
     scatter(wave_height_mapped,window_depths,35,Hs_swell_timeseries,'filled');
