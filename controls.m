@@ -16,6 +16,7 @@ pre_smooth = 0; % Default is 0
 %% Visualization Options
 % "1" turns them on, "0" turns them off
 make_contour_graph = 1;
+make_conditions_plot = 1;
 make_spectral_plot = 1;
 make_wave_height_plot = 1;
 make_energy_bar_chart = 0;

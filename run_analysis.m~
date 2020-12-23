@@ -627,23 +627,20 @@ if make_conditions_plot
     
     ff(2) = subplot(3,2,[3,4]);
     yyaxis left
-    scatter(swell.time,swell.hgt,'.');
+    scatter(swell.time,swell.hgt,'+');
     ylabel('Offshore Significant Wave Height (m)');
     
     yyaxis right
     hold on
-    scatter(swell.time,swell.dir,'+');
-    ylabel('Offshore Dominant Wave Direction (°)');
+    scatter(swell.time,swell.dir,'go');
     
     ff(3) = subplot(3,2,[5,6]);
     yyaxis left
-    plot(trimmed_times,trimmed_depth_signal,'-');
-    ylabel(['Depth from Sensor at ' labels{sensor_choice} ' (m)']);
+    plot(trimmed_times,trimmed_depth_signal,'k-');
     
     yyaxis right
     hold on
     scatter(swell.time,swell.per,'.');
-    ylabel('Offshore Dominant Wave Period (s)');
     
     linkaxes(ff,'x');
     xlim([datenum(window_times(1)) datenum(window_times(end))]);
