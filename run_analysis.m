@@ -514,7 +514,7 @@ if make_contour_graph
         % Impose high & low values to fix scale bar. 
 %         matrixSfreq(end,end) = max_varpreserv_power;
 %         matrixSfreq(end,end-1) = 0;
-        contourf(datenum(window_times(:)),logfreq(n_leakage_ignore:end),matrixSfreq(n_leakage_ignore:end,:),15,'LineColor','none');
+        contourf(datenum(window_times(:)),logfreq(n_leakage_ignore:end),log10(matrixSfreq(n_leakage_ignore:end,:)),15,'LineColor','none');
     else
         % Impose high & low values to fix scale bar. 
         logSt(2,end) = -1;
@@ -525,14 +525,13 @@ if make_contour_graph
     if use_residual_spectra
         c.Label.String = 'Residual Energy Density (m^2/Hz)';
     else
-        c.Label.String = 'Energy Density (m^2/Hz)';
+        c.Label.String = 'Log_{10} Energy Density (m^2/Hz)';
     end
 
     xlim([datenum(window_times(1)) datenum(window_times(end))]);
 
     ylabel('Log_{10} Frequency (Hz)'); 
     xlabel('Time (Center of Interval)');
-    zlabel('Log Energy Density (m^2/Hz)');
 
     ff(2) = subplot(4,2,[5,6]);
     yyaxis right
@@ -563,14 +562,14 @@ if make_contour_graph
         case 4
             scatter(datenum(tboc_wind.time),tboc_wind.dir,'+');
         case 5
-            scatter(datenum(bml_wind.dir_time),bml_wind.dir,'+');
+            scatter(bml_wind.dir_time,bml_wind.dir,'+');
     end   
-    scatter(datenum(swell.time),swell.dir,'go');
+    scatter(swell.time,swell.dir,'go');
     ylabel('Direction (°)');
     ylim([0 360]); % weird outliers sometimes...
-    xlim([start_time end_time]);
+    xlim([window_times(1) window_times(end)]);
 
-    ff(3) = subplot(2,2,[3,4]);
+    ff(3) = subplot(4,2,[7,8]);
     yyaxis left
     plot(datenum(swell.time),swell.hgt,'+');
     ylabel('H_s (m)');
@@ -580,9 +579,9 @@ if make_contour_graph
     scatter(datenum(swell.time),swell.per,'.');
     ylabel('Period (s)');
     ylim([0 20]);
-    xlim([start_time end_time]);
+    xlim([window_times(1) window_times(end)]);
 
-    linkaxes(ff,'x');
+%     linkaxes(ff,'x');
     
 end
 
@@ -646,7 +645,7 @@ if make_conditions_plot
     ylabel('Offshore Dominant Wave Period (s)');
     
     linkaxes(ff,'x');
-    xlim([datenum(window_times(1)) datenum(window_times(end))]);
+    xlim([window_times(1) window_times(end)]);
     
 end
 
