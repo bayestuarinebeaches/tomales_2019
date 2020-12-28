@@ -24,8 +24,7 @@ make_polar_plot = 0;
 make_chop_plot = 0;
 make_swell_plot = 0;
 make_wind_start_plot = 0;
-make_binned_chart = 0;
-make_energy_flux_contour_graph = 1;
+make_energy_flux_contour_graph = 0;
 plot_only_mean_spectrum = 0;
 
 use_residual_spectra = 0; % Default is 0

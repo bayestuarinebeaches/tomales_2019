@@ -2,8 +2,8 @@
 % Last Edited 14 Sept 2020
 
 %% Load Control Parameters & Dates
-run date_controls.m
 run controls.m
+run date_controls.m
 
 %% Liftoff Announcements
 
@@ -545,7 +545,7 @@ if make_contour_graph
         case 4
             scatter(datenum(tboc_wind.time),tboc_wind.spd,'.');
         case 5
-            scatter(datenum(tbb_wind.time),tbb_wind.spd.*0.44704,'.');
+            scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'.');
     end
     
     ylim([0 20]);
@@ -571,12 +571,12 @@ if make_contour_graph
 
     ff(3) = subplot(4,2,[7,8]);
     yyaxis left
-    plot(datenum(swell.time),swell.hgt,'+');
+    plot(swell.time,swell.hgt,'+');
     ylabel('H_s (m)');
     hold on
-    plot(datenum(trimmed_times),trimmed_depth_signal,'k-');
+    plot(trimmed_times,trimmed_depth_signal,'k-');
     yyaxis right
-    scatter(datenum(swell.time),swell.per,'.');
+    scatter(swell.time,swell.per,'.');
     ylabel('Period (s)');
     ylim([0 20]);
     xlim([window_times(1) window_times(end)]);
@@ -605,7 +605,7 @@ if make_conditions_plot
             scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'.');
     end
     
-    ylim([0 20]);
+    ylim([0 10]);
     ylabel('Wind Speed (m/s)');
     yyaxis right
     hold on
@@ -644,6 +644,7 @@ if make_conditions_plot
     scatter(swell.time,swell.per,'.');
     ylabel('Offshore Dominant Wave Period (s)');
     
+    xlim([window_times(1) window_times(end)]);
     linkaxes(ff,'x');
     xlim([window_times(1) window_times(end)]);
     
@@ -816,49 +817,6 @@ if make_wind_start_plot
     xlim([min(window_times),max(window_times)]);
     xlabel('Date');
     title(['Wind Chop Development at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
-    
-end
-
-if make_binned_chart
-    % First Winds
-    
-    buckets = zeros(10,10);
-    bucket_counts = zeros(10,10);
-    [depths_binned,depths_edges] = discretize(window_depths,10);
-    [windspeed_binned,windspeed_edges] = discretize(wind_speed_mapped,10);
-    for mm = 1:n_windows
-        buckets(windspeed_binned(mm),depths_binned(mm)) = buckets(windspeed_binned(mm),depths_binned(mm)) + window_m0_wind(mm);
-        bucket_counts(windspeed_binned(mm),depths_binned(mm)) = bucket_counts(windspeed_binned(mm),depths_binned(mm)) + 1;
-    end
-    buckets = buckets./bucket_counts;
-    buckets(isnan(buckets)) == 0;
-    
-    figure
-    contourf(buckets,'LineColor','None')
-    c = colorbar('east');
-    xlabel('Binned Wind Speed');
-    ylabel('Binned Water Depth');
-    title(['Binning Wind and Depth at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
-    
-    % Now Swell
-    
-    buckets = zeros(10,10);
-    bucket_counts = zeros(10,10);
-    [swell_binned,windspeed_edges] = discretize(wave_height_mapped,10);
-    for mm = 1:n_windows
-        buckets(swell_binned(mm),depths_binned(mm)) = buckets(swell_binned(mm),depths_binned(mm)) + window_m0_swell(mm);
-        bucket_counts(swell_binned(mm),depths_binned(mm)) = bucket_counts(swell_binned(mm),depths_binned(mm)) + 1;
-    end
-    buckets = buckets./n_windows;
-    buckets(isnan(buckets)) == 0;
-    
-    figure
-    contourf(buckets,'LineColor','None')
-    c = colorbar('east');
-    xlabel('Binned Offshore Wave Height');
-    ylabel('Binned Water Depth');
-    title(['Binning Swell and Depth at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
-    
     
 end
 
