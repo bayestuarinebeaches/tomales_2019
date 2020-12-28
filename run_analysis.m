@@ -383,36 +383,6 @@ APD_total = sqrt(m0_total/m2_total);
 % fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs Seiche = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_seiche);
 fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs TOTAL = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_total);
 
-if make_energy_bar_chart
-    figure
-    if include_seiche
-        percent_wind = m0_wind/(m0_wind+m0_swell+m0_igw+m0_seiche);
-        percent_swell = m0_swell/(m0_wind+m0_swell+m0_igw+m0_seiche);
-        percent_igw = m0_igw/(m0_wind+m0_swell+m0_igw+m0_seiche);
-        percent_seiche = m0_seiche/(m0_wind+m0_swell+m0_igw+m0_seiche);
-        bar_labels = categorical({'Wind','Swell','IGW','Seiche'});
-        bar_labels = reordercats(bar_labels,{'Wind','Swell','IGW','Seiche'});
-        b = bar(bar_labels,[Hs_wind,Hs_swell,Hs_igw,Hs_seiche]);
-        xtips = b.XEndPoints;
-        ytips = b.YEndPoints;
-        text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2),num2str(percent_seiche,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
-    else
-        percent_wind = m0_wind/(m0_wind+m0_swell+m0_igw);
-        percent_swell = m0_swell/(m0_wind+m0_swell+m0_igw);
-        percent_igw = m0_igw/(m0_wind+m0_swell+m0_igw);
-        bar_labels = categorical({'Wind','Swell','IGW'});
-        bar_labels = reordercats(bar_labels,{'Wind','Swell','IGW'});
-        b = bar(categorical({'Wind','Swell','IGW'}),[Hs_wind,Hs_swell,Hs_igw]);
-        xtips = b.XEndPoints;
-        ytips = b.YEndPoints;
-%         text(xtips,ytips,{num2str(percent_wind,2),num2str(percent_swell,2),num2str(percent_igw,2)},'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',35);
-        text(xtips,ytips,{num2str(Hs_wind,2),num2str(Hs_swell,2),num2str(Hs_igw,2)},'HorizontalAlignment','center','VerticalAlignment','bottom');
-    end
-    title(['Energy Proportions at ' labels{sensor_choice}]);
-    ylim([0 0.15]);
-    ylabel('Wave Heights (m)');
-end
-
 %% Plot Generation
 
 run plot_generation.m

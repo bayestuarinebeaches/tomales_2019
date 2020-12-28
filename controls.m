@@ -21,9 +21,9 @@ make_spectral_plot = 1;
 make_wave_height_plot = 1;
 make_energy_bar_chart = 0;
 make_polar_plot = 0;
-make_chop_plot = 0;
+make_chop_plot = 1;
 make_swell_plot = 0;
-make_wind_start_plot = 0;
+make_wind_start_plot = 1;
 make_energy_flux_contour_graph = 0;
 plot_only_mean_spectrum = 0;
 

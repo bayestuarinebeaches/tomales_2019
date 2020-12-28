@@ -115,7 +115,7 @@ if make_contour_graph
     figure
     sgtitle([labels{sensor_choice} ' Spectra, ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '. ' extra]);
 
-    ff(1) = subplot(5,1,[1,2,3]);
+    ff(1) = subplot(4,2,[1,2,3,4]);
 
     if variance_preserving
         % Impose high & low values to fix scale bar. 
@@ -128,35 +128,20 @@ if make_contour_graph
         logSt(2,end-1) = -9;
         contourf(datenum(window_times(:)),logfreq(n_leakage_ignore:end),logSt(n_leakage_ignore:end,:),15,'LineColor','none'); % 9 is pretty good, or 15
     end
-    c = colorbar('northoutside');
+    c = colorbar('east');
     if use_residual_spectra
         c.Label.String = 'Residual Energy Density (m^2/Hz)';
     else
         c.Label.String = 'Log_{10} Energy Density (m^2/Hz)';
     end
 
-    set(gca,'TickDir','out'); % The only other option is 'in'
     xlim([datenum(window_times(1)) datenum(window_times(end))]);
 
     ylabel('Log_{10} Frequency (Hz)'); 
     xlabel('Time (Center of Interval)');
 
-    ff(2) = subplot(5,1,4);
-    yyaxis left
-    plot(swell.time,swell.hgt,'.');
-    ylabel('H_s (m)');
-    hold on
-    
+    ff(2) = subplot(4,2,[5,6]);
     yyaxis right
-    plot(trimmed_times,trimmed_depth_signal,'-');
-%     scatter(swell.time,swell.per,'.');
-%     ylabel('Period (s)');
-%     ylim([0 20]);
-    xlim([window_times(1) window_times(end)]);
-    set(gca,'TickDir','out'); % The only other option is 'in'
-
-    ff(3) = subplot(5,1,5);
-    %     yyaxis right
     switch wind_option
         case 1
             scatter(datenum(bml_wind.spd_time),bml_wind.spd,'.');
@@ -168,33 +153,42 @@ if make_contour_graph
             scatter(datenum(tboc_wind.time),tboc_wind.spd,'.');
         case 5
             scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'.');
-            hold on
-%             plot(hioc_wind.time,hioc_wind.spd.*0.44704,'-');
-%             scatter(tboc_wind.time,tboc_wind.spd.*0.44704,'.');
-%             legend('TBB','TBOC');
     end
     
-    ylim([0 12]);
+    ylim([0 20]);
     ylabel('Wind Speed (m/s)');
-%     yyaxis left
-%     hold on
-%     switch wind_option
-%         case 1
-%             scatter(datenum(bml_wind.dir_time),bml_wind.dir,'+');
-%         case 2
-%             scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
-%         case 3
-%             scatter(datenum(hioc_wind.time),hioc_wind.dir,'+');
-%         case 4
-%             scatter(datenum(tboc_wind.time),tboc_wind.dir,'+');
-%         case 5
-%             scatter(bml_wind.dir_time,bml_wind.dir,'+');
-%     end   
-%     scatter(swell.time,swell.dir,'go');
-%     ylabel('Direction (°)');
-%     ylim([0 360]); % weird outliers sometimes...
+    yyaxis left
+    hold on
+    switch wind_option
+        case 1
+            scatter(datenum(bml_wind.dir_time),bml_wind.dir,'+');
+        case 2
+            scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
+        case 3
+            scatter(datenum(hioc_wind.time),hioc_wind.dir,'+');
+        case 4
+            scatter(datenum(tboc_wind.time),tboc_wind.dir,'+');
+        case 5
+            scatter(bml_wind.dir_time,bml_wind.dir,'+');
+    end   
+    scatter(swell.time,swell.dir,'go');
+    ylabel('Direction (°)');
+    ylim([0 360]); % weird outliers sometimes...
     xlim([window_times(1) window_times(end)]);
-    set(gca,'TickDir','out'); % The only other option is 'in'
+
+    ff(3) = subplot(4,2,[7,8]);
+    yyaxis left
+    plot(swell.time,swell.hgt,'+');
+    ylabel('H_s (m)');
+    hold on
+    plot(trimmed_times,trimmed_depth_signal,'k-');
+    yyaxis right
+    scatter(swell.time,swell.per,'.');
+    ylabel('Period (s)');
+    ylim([0 20]);
+    xlim([window_times(1) window_times(end)]);
+
+%     linkaxes(ff,'x');
     
 end
 
@@ -218,7 +212,7 @@ if make_conditions_plot
             scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'.');
     end
     
-    ylim([0 15]);
+    ylim([0 10]);
     ylabel('Wind Speed (m/s)');
     yyaxis right
     hold on
@@ -284,7 +278,6 @@ switch wind_option
         % WEIRD UNIQUENESS ISSUE WITH BML WINDS...?
         [~,unique_index] = unique(bml_wind.dir_time);
         wind_speed_mapped = interp1(datenum(tbb_wind.time),tbb_wind.spd,datenum(window_times')).*0.44704;
-%         wind_speed_mapped = interp1(datenum(tboc_wind.time),tboc_wind.spd,datenum(window_times')).*0.44704;
         wind_dir_mapped = interp1(datenum(bml_wind.dir_time(unique_index)),bml_wind.dir(unique_index),datenum(window_times'));
 end
 wind_direction_NW = wind_dir_mapped > 280; % in degrees, 4.89 for radians
@@ -420,13 +413,10 @@ if make_wind_start_plot
         case 4
             scatter(tboc_wind.time, tboc_wind.spd,'.');
         case 5
-            scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'+');
-            hold on
             scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'.');
-            legend('TBB','TBOC');
     end
     hold on
-    ylim([0 15]);
+    ylim([0 25]);
     ylabel('Wind Speed (m/s)');
     yyaxis right
     plot(window_times,window_Hs_wind,'r-');
@@ -535,7 +525,7 @@ if make_energy_flux_contour_graph
             scatter(datenum(tbb_wind.time),tbb_wind.spd.*0.44704,'.');
     end
     
-    ylim([0 15]);
+    ylim([0 20]);
     ylabel('Wind Speed (m/s)');
     yyaxis left
     hold on
