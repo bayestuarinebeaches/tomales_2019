@@ -11,7 +11,7 @@ clear all
 run date_controls.m
 run controls.m
 
-sensor_index = [2 4]; % 1:length(cmab)
+sensor_index = [2 4]; %1:length(cmab)
 n_sensors = length(sensor_index);
 
 for ss = sensor_index 
@@ -50,7 +50,7 @@ xlabel('Frequency (Hz)');
 ylabel('Energy Density (m^2 / Hz)');
 title(['Energy Density from ' datestr(start_time) ' to ' datestr(end_time) ' using ' num2str(ea_spacing) '/' num2str(window_length) '/' num2str(instance_length) '.']);
 legend(labels);
-ylim([0 max_varpreserv_power]);
+ylim([0 2*10^-5]);
 % And last curve is NDBC Buoy
 
 figure
@@ -65,8 +65,8 @@ for ss = sensor_index
     eval(['semilogx(freq(n_leakage_ignore:end),low_running_S_' num2str(ss) '(n_leakage_ignore:end).*freq(n_leakage_ignore:end));']);
     ylabel('Variance Per Hz');
     xlabel('Frequency (Hz)');
-    title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{ss}]);
-    axis([min(freq),max(freq),0,max_varpreserv_power]);
+%     title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{ss}]);
+    axis([min(freq),max(freq),0,0.5*10^-4]);
     index = index + 1;
 end
 legend('Total Running','Flooding','Ebbing','High Slack','Low Slack');

@@ -28,6 +28,11 @@ if make_energy_bar_chart
     ylabel('Wave Heights (m)');
 end
 
+eval(['Hs_wind_' num2str(sensor_choice) ' = window_Hs_wind;']);
+eval(['Hs_swell_' num2str(sensor_choice) ' = window_Hs_swell;']);
+eval(['Hs_igw_' num2str(sensor_choice) ' = window_Hs_igw;']);
+eval(['window_times_' num2str(sensor_choice) ' = window_times;']);
+
 if make_wave_height_plot
     figure
     sgtitle([labels{sensor_choice} ' H_s (via m_0), ' datestr(start_time) ' to ' datestr(end_time) '. ' extra]);
@@ -49,11 +54,6 @@ if make_wave_height_plot
     else
         legend('Wind','Swell','IGW','Depth Signal');
     end
-
-    eval(['Hs_wind_' num2str(sensor_choice) ' = window_Hs_wind;']);
-    eval(['Hs_swell_' num2str(sensor_choice) ' = window_Hs_swell;']);
-    eval(['Hs_igw_' num2str(sensor_choice) ' = window_Hs_igw;']);
-    eval(['window_times_' num2str(sensor_choice) ' = window_times;']);
 
     ff(2) = subplot(4,2,[5,6]);
     yyaxis right
@@ -138,6 +138,7 @@ if make_contour_graph
     set(gca,'TickDir','out'); % The only other option is 'in'
     xlim([datenum(window_times(1)) datenum(window_times(end))]);
 
+    ylim([-2.5 0]);
     ylabel('Log_{10} Frequency (Hz)'); 
     xlabel('Time (Center of Interval)');
 
@@ -156,7 +157,7 @@ if make_contour_graph
     set(gca,'TickDir','out'); % The only other option is 'in'
 
     ff(3) = subplot(5,1,5);
-    %     yyaxis right
+    yyaxis left
     switch wind_option
         case 1
             scatter(datenum(bml_wind.spd_time),bml_wind.spd,'.');
@@ -175,24 +176,25 @@ if make_contour_graph
     end
     
     ylim([0 12]);
+    
     ylabel('Wind Speed (m/s)');
-%     yyaxis left
-%     hold on
-%     switch wind_option
-%         case 1
-%             scatter(datenum(bml_wind.dir_time),bml_wind.dir,'+');
-%         case 2
-%             scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
-%         case 3
-%             scatter(datenum(hioc_wind.time),hioc_wind.dir,'+');
-%         case 4
-%             scatter(datenum(tboc_wind.time),tboc_wind.dir,'+');
-%         case 5
-%             scatter(bml_wind.dir_time,bml_wind.dir,'+');
-%     end   
+    yyaxis right
+    hold on
+    switch wind_option
+        case 1
+            scatter(datenum(bml_wind.dir_time),bml_wind.dir,'+');
+        case 2
+            scatter(datenum(tbb_wind.time),tbb_wind.dir,'+');
+        case 3
+            scatter(datenum(hioc_wind.time),hioc_wind.dir,'+');
+        case 4
+            scatter(datenum(tboc_wind.time),tboc_wind.dir,'+');
+        case 5
+            scatter(bml_wind.dir_time,bml_wind.dir,'.');
+    end   
 %     scatter(swell.time,swell.dir,'go');
-%     ylabel('Direction (°)');
-%     ylim([0 360]); % weird outliers sometimes...
+    ylabel('Direction (°)');
+    ylim([0 360]); % weird outliers sometimes...
     xlim([window_times(1) window_times(end)]);
     set(gca,'TickDir','out'); % The only other option is 'in'
     
@@ -381,10 +383,23 @@ if make_chop_plot
     title(['Wind Chop Height at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
     
     figure
-    scatter(window_depths,tmp2);
+%     scatter(window_depths,tmp2);
+    scatter(window_depths,tmp2,35,tmp1,'filled');
+    colormap cool
+    c = colorbar;
+    c.Label.String = 'Wind Speed (m/s)';
     xlabel('Window Water Depth (m)');
-    ylabel('H_s in Wind Chop (m)');
+    ylabel('H_s from Wind Chop (m)');
     title(['Wind Chop Height at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
+    
+    figure
+    scatter(window_depths,window_Hs_swell,'.');
+    hold on
+    scatter(window_depths,window_Hs_igw,'.');
+    xlabel('Window Water Depth (m)');
+    ylabel('H_s (m)');
+    title(['Swell and Infragravity Wave Heights at ' labels{sensor_choice} ', ' num2str(instance_length) '-long instances.']);
+    legend('Swell','Infragravity');
 end
 
 %% Etc Plotting
@@ -475,7 +490,9 @@ if make_spectral_plot
         ylabel('Depth Energy Density (m^2/Hz)');
     end
     xlabel('Frequency (Hz)');
-    title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
+    if ~plot_only_mean_spectrum
+        title(['Mean of ' num2str(instance_length) '-hr Spectra at ' labels{sensor_choice} ' from ' datestr(start_time) ' to ' datestr(end_time)]);
+    end
 
     % Bounds to fit... 
     [~,si] = min(abs(freq - 0.4)); % -2
@@ -575,3 +592,40 @@ end
 % DON'T FORGET... 
 % THIS IS ENERGY FLUX PER FREQUENCY, NOT YET FULLY DIMENSIONED EITHER 
 % (need to multiply by 0.5 * rho * g)
+
+%% Bed Shear Plotting
+if make_tau_plot
+    figure
+    f(1) = subplot(2,1,1);
+    yyaxis left
+    plot(window_times,window_taub);
+    ylabel('Tau_b (Pa)');
+    hold on
+    yyaxis right
+    plot(window_times,window_taustar);
+    ylabel('Tau*');
+    title(['Bed Shear at ' labels{sensor_choice}]);
+    
+    f(2) = subplot(2,1,2);
+    yyaxis left
+    plot(window_times,window_depths);
+    yyaxis right
+    scatter(tbb_wind.time,tbb_wind.spd.*0.44704,'.');
+    
+    linkaxes(f,'x');
+    xlim([window_times(1) window_times(end)]);
+    
+    figure
+%     scatter(window_depths,window_taub,35,wind_speed_mapped,'filled')
+    scatter(window_depths,window_taub,35,window_Hs_total,'filled' )
+    colormap cool
+    c = colorbar;
+%     c.Label.String = 'Wind Speed (m/s)';
+    c.Label.String = 'H_s (total) (m)';
+    xlabel('Water Depth (m)');
+    ylabel('Tau_b (Pa)');
+    title(['Bed Shear vs Depth at ' labels{sensor_choice}]);
+    
+    xlim([0.1 2.2]);
+    ylim([0 0.8]);
+end

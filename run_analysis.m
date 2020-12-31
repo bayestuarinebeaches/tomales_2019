@@ -46,7 +46,7 @@ end
 % Cutoffs between types of waves (in seconds)
 max_period_wind = 4;
 max_period_swell = 25; % Maryam used 20s, we use 25
-max_period_igw = 300; % Maryam used 300s, we use 250
+max_period_igw = 300; % Maryam used 300s
 
 % How many points do you want to use for the moving average of S? 
 n_smooth = 3;
@@ -310,8 +310,8 @@ for nn = 0:n_windows-1
     
     temp_kh = qkhfs(2*pi*1/window_AvgT(nn+1),window_depths(nn+1));
     window_ub(nn+1) = window_Hs_total(nn+1)*pi/(window_AvgT(nn+1)*sinh(temp_kh));
-    window_taub(nn+1) = rho*window_ub(nn+1)^2;
-    window_taustar(nn+1) = window_taub(nn+1)/((2650-rho)*D50s(sensor_choice)*g); % Shields Parameter
+    window_taub(nn+1) = 0.5*0.025*rho*window_ub(nn+1)^2;
+    window_taustar(nn+1) = window_taub(nn+1)/((2650-rho)*D50s(sensor_choice)*(10^-3)*g); % Shields Parameter
     
 end
 
