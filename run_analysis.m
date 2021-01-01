@@ -182,6 +182,10 @@ window_nondimparameter = zeros(1,n_windows);
 window_ub = zeros(1,n_windows);
 window_taub = zeros(1,n_windows);
 window_taustar = zeros(1,n_windows);
+window_Hs_ratio = zeros(1,n_windows);
+window_a = zeros(1,n_windows);
+window_Rew = zeros(1,n_windows);
+window_fw = zeros(1,n_windows);
 
 running_S = zeros(size(big_average_S));
 
@@ -307,11 +311,18 @@ for nn = 0:n_windows-1
     window_Hs_igw(nn+1) = 4*sqrt(m0_igw);
     window_Hs_seiche(nn+1) = 4*sqrt(m0_seiche);
     window_nondimparameter(nn+1) = ws*window_AvgT(nn+1)/window_depths(nn+1);
+    window_Hs_ratio(nn+1) = window_Hs_wind(nn+1)/window_Hs_swell(nn+1);
     
     temp_kh = qkhfs(2*pi*1/window_AvgT(nn+1),window_depths(nn+1));
     window_ub(nn+1) = window_Hs_total(nn+1)*pi/(window_AvgT(nn+1)*sinh(temp_kh));
-    window_taub(nn+1) = 0.5*0.025*rho*window_ub(nn+1)^2;
+    window_a(nn+1) = window_ub(nn+1)*window_AvgT(nn+1)/(2*pi);
+    window_Rew(nn+1) = window_a(nn+1)^2 * (2*pi/window_AvgT(nn+1))*(1*10^6);
+    window_fw(nn+1) = 2*window_Rew(nn+1)^(-0.5);
+    
+    window_taub(nn+1) = 0.5*window_fw(nn+1)*rho*window_ub(nn+1)^2;
     window_taustar(nn+1) = window_taub(nn+1)/((2650-rho)*D50s(sensor_choice)*(10^-3)*g); % Shields Parameter
+    
+    
     
 end
 
