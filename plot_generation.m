@@ -509,14 +509,24 @@ end
 
 %% Energy Flux & Dissipation Stuff
 
-run energy_flux.m
+% run energy_flux.m
+if make_energy_flux_curves
+    figure
+    semilogx(freq(n_leakage_ignore:end),running_S(n_leakage_ignore:end).*Cg(n_leakage_ignore:end),'k');
+    hold on
+    semilogx(freq(n_leakage_ignore:end),flooding_running_S(n_leakage_ignore:end).*Cg(n_leakage_ignore:end),'r');
+    semilogx(freq(n_leakage_ignore:end),ebbing_running_S(n_leakage_ignore:end).*Cg(n_leakage_ignore:end),'g');
+    semilogx(freq(n_leakage_ignore:end),high_running_S(n_leakage_ignore:end).*Cg(n_leakage_ignore:end),'b');
+    semilogx(freq(n_leakage_ignore:end),low_running_S(n_leakage_ignore:end).*Cg(n_leakage_ignore:end),'m');
+    legend('Total Running','Flooding','Ebbing','High Slack','Low Slack');
+    ylabel('Energy Flux Density (W*s/m)');
+    xlabel('Frequency (Hz)');
+    title(['Energy Flux Density Curves for ' labels{sensor_choice}]);
+    xlim([1/max_period_igw,1]);
+    ylim([0 2*10^-3]);
+    
+end
 
-eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
-eval(['running_S_' num2str(sensor_choice) ' = running_S;']);
-eval(['flooding_running_S_' num2str(sensor_choice) ' = flooding_running_S;']);
-eval(['ebbing_running_S_' num2str(sensor_choice) ' = ebbing_running_S;']);
-eval(['high_running_S_' num2str(sensor_choice) ' = high_running_S;']);
-eval(['low_running_S_' num2str(sensor_choice) ' = low_running_S;']);
 
 if make_energy_flux_contour_graph
     figure
@@ -617,15 +627,16 @@ if make_tau_plot
     
     figure
 %     scatter(window_depths,window_taub,35,wind_speed_mapped,'filled')
-    scatter(window_depths,window_taub,35,window_Hs_total,'filled' )
+%     scatter(window_depths,window_taub,35,window_Hs_total,'filled' )
+    scatter(window_depths,window_taub,35,window_m0_wind./window_m0_total,'filled' )
     colormap cool
     c = colorbar;
 %     c.Label.String = 'Wind Speed (m/s)';
-    c.Label.String = 'H_s (total) (m)';
+    c.Label.String = 'Proportion of total energy due to Wind Waves';
     xlabel('Water Depth (m)');
     ylabel('Tau_b (Pa)');
     title(['Bed Shear vs Depth at ' labels{sensor_choice}]);
     
     xlim([0.1 2.2]);
-    ylim([0 0.8]);
+    ylim([0 0.2]);
 end

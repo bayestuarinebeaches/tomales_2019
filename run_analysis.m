@@ -301,7 +301,7 @@ for nn = 0:n_windows-1
     window_m0_swell(nn+1) = m0_swell;
     window_m0_igw(nn+1) = m0_igw;
     window_m0_seiche(nn+1) = m0_seiche;
-    window_m0_total(nn+1) = m0_wind + m0_swell + m0_igw + m0_seiche;
+    window_m0_total(nn+1) = m0_wind + m0_swell + m0_igw;% + m0_seiche;
     [~,ei] = min(abs(freq - hfc));
     window_m2_total(nn+1) = trapz(freq(2:ei).^2,S(2:ei));
     window_AvgT(nn+1) = sqrt(window_m0_total(nn+1)./window_m2_total(nn+1));
@@ -321,8 +321,6 @@ for nn = 0:n_windows-1
     
     window_taub(nn+1) = 0.5*window_fw(nn+1)*rho*window_ub(nn+1)^2;
     window_taustar(nn+1) = window_taub(nn+1)/((2650-rho)*D50s(sensor_choice)*(10^-3)*g); % Shields Parameter
-    
-    
     
 end
 
@@ -379,10 +377,12 @@ m0_igw = trapz(freq(si:ei),running_S(si:ei));
 [~,ei] = min(abs(freq - 1/max_period_igw));
 m0_seiche = trapz(freq(2:ei),running_S(2:ei));
 
-% total
-[~,ei] = min(abs(freq - hfc));
-m0_total = trapz(freq(n_leakage_ignore:ei),running_S(n_leakage_ignore:ei));
-m2_total = trapz(freq(n_leakage_ignore:ei).^2,running_S(n_leakage_ignore:ei));
+% total --- note ignoring seiche motions
+[~,eihfc] = min(abs(freq - hfc));
+m0_total = trapz(freq(ei:eihfc),running_S(ei:eihfc));
+% OK for some reason this m0_total is totally off from the sum of the
+% others
+m2_total = trapz(freq(ei:eihfc).^2,running_S(ei:eihfc));
 
 Hs_wind = 4*sqrt(m0_wind);
 Hs_swell = 4*sqrt(m0_swell);
@@ -393,6 +393,13 @@ APD_total = sqrt(m0_total/m2_total);
 
 % fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs Seiche = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_seiche);
 fprintf('Hs wind = %f, Hs swell = %f, Hs IGW = %f, Hs TOTAL = %f\n',Hs_wind,Hs_swell,Hs_igw,Hs_total);
+
+eval(['energy_flux_' num2str(sensor_choice) ' = running_S.*Cg;']);
+eval(['running_S_' num2str(sensor_choice) ' = running_S;']);
+eval(['flooding_running_S_' num2str(sensor_choice) ' = flooding_running_S;']);
+eval(['ebbing_running_S_' num2str(sensor_choice) ' = ebbing_running_S;']);
+eval(['high_running_S_' num2str(sensor_choice) ' = high_running_S;']);
+eval(['low_running_S_' num2str(sensor_choice) ' = low_running_S;']);
 
 %% Plot Generation
 

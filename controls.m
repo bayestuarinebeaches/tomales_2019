@@ -16,7 +16,7 @@ pre_smooth = 0; % Default is 0
 %% Visualization Options
 % "1" turns them on, "0" turns them off
 make_contour_graph = 0;
-make_conditions_plot = 1;
+make_conditions_plot = 0;
 make_spectral_plot = 0;
 make_wave_height_plot = 0;
 make_energy_bar_chart = 0;
@@ -27,6 +27,7 @@ make_wind_start_plot = 0;
 make_energy_flux_contour_graph = 0;
 plot_only_mean_spectrum = 0;
 make_tau_plot = 1;
+make_energy_flux_curves = 0; 
 
 use_residual_spectra = 0; % Default is 0
 include_seiche = 0; % Default is 0

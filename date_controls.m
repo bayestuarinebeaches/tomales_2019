@@ -74,16 +74,16 @@
 % end_time = datenum(2019,9,27,6,0,0);
 
 %% For FOURTH Sensor Set
-% start = [2019,9,28,0,0,0];
-% start_time = datenum(start);
-% end_time = datenum(2019,11,21,0,0,0);
-% % load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
-% load rbr_data_deployment_4_tweaked.mat
-% % LL, SB, PPN, TP
-% % NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
-% cmab = [460, 14, 20, 5];
-% fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point. 
-% D50s = [0.13, 0.30, 1.27, 4]; % in mm, TP is a total guess as of 11 Dec 2020
+start = [2019,9,28,0,0,0];
+start_time = datenum(start);
+end_time = datenum(2019,11,21,0,0,0);
+% load rbr_data_deployment_4_fixed.mat % Has fixed pressure records. 
+load rbr_data_deployment_4_tweaked.mat
+% LL, SB, PPN, TP
+% NOTE LAWSONS LANDING TIMESERIES HERE IS MESSED UP, CAME LOOSE SOME WAY IN...
+cmab = [460, 14, 20, 5];
+fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point. 
+D50s = [0.13, 0.27, 1.27, 0.51]; % in mm, TP is a total guess as of 11 Dec 2020
 
 % % end_time = datenum(2019,10,20,0,0,0);
 
@@ -124,15 +124,15 @@
 
 %% 5th Deployment
 
-start = [2019,11,26,0,0,0];
-start = [2019,12,12,0,0,0]; % TP started later
-start_time = datenum(start);
-end_time = datenum(2020,1,27,0,0,0);
-load rbr_data_deployment_5.mat
-% LL, SB, PPN, TP
-cmab = [460, 14, 20, 5];
-D50s = [0.13, 0.30, 1.27, 4];
-fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point.
+% start = [2019,11,26,0,0,0];
+% start = [2019,12,12,0,0,0]; % TP started later
+% start_time = datenum(start);
+% end_time = datenum(2020,1,27,0,0,0);
+% load rbr_data_deployment_5.mat
+% % LL, SB, PPN, TP
+% cmab = [460, 14, 20, 5];
+% D50s = [0.13, 0.30, 1.27, 4];
+% fetch = [0.6 1.1 0.9 10.2]; % in km. First two are from Sand Point; Second two are from Hog Island. Add 2.6km to make them from Tom's Point.
 
 
 %% Rubbish Bin for 4th deployment
